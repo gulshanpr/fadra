@@ -6,16 +6,25 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract XToken is ERC20 {
     uint256 public immutable maxSupply; // Maximum supply of the token
 
-    constructor(string memory _name, string memory _symbol, uint256 _maxSupply) ERC20(_name, _symbol) {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _maxSupply
+    ) ERC20(_name, _symbol) {
         maxSupply = _maxSupply * 10 ** decimals(); // Set the max supply in the constructor
     }
+
+    // total token supply = 6,942,000,000
 
     // Public mint function that allows anyone to mint tokens
     function mint(uint256 amount) public {
         uint256 amountWithDecimals = amount * 10 ** decimals();
         // Ensure the total supply does not exceed the max supply
-        require(totalSupply() + amountWithDecimals <= maxSupply, "Minting exceeds max supply");
-        
+        require(
+            totalSupply() + amountWithDecimals <= maxSupply,
+            "Minting exceeds max supply"
+        );
+
         // Mint the tokens to the caller
         _mint(msg.sender, amountWithDecimals);
     }
@@ -61,8 +70,16 @@ contract XToken is ERC20 {
 
     // function Sactivity(){
     // Sactivity = User Transaction / avg Transaction
-        // from array we'll get no of transaction made my user = n
-        // for avg transaction we'll have varibles that keep track for every transaction and on succesful is incremented transaction count, then will we have avg transaction = total transaction / n, we will get n by length of mapping that we will get by keeping track of every new user, if this user exists then use the mapping otherwise increase the n and add it to mapping
+    // from array we'll get no of transaction made my user = n
+    // for avg transaction we'll have varibles that keep track for every transaction and on succesful is incremented transaction count, then will we have avg transaction = total transaction / n, we will get n by length of mapping that we will get by keeping track of every new user, if this user exists then use the mapping otherwise increase the n and add it to mapping
     // }
 
+    // for reward pool i will be using this same contract will be work as erc-20 token
+    // as well as it can handle reward pool
+
+    // chatgpt is suggesting to keep the target activity and target reward pool dynamic
+    // also it is saying to keep the dynamic the baseAlphaMin and max and baseBetaMin and max
+    // around 10% for the inital rewar pool is sounds like a good idea
+
+    // while claiming reward i need to put condition to exclude few day atleast, otherwise they will buy token and try to claim reward in next reward itself, so i need to put a condition to exclude few days atleast
 }
