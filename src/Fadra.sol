@@ -5,6 +5,18 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Fadra is ERC20 {
     uint256 public immutable maxSupply = 6942000000 * 10 ** 18;
+    uint256 private constant SECONDS_PER_YEAR = 31536000;
+    uint256 private constant SCALE = 1e18; // min of 1 from Hholding added precision
+
+    struct UserActivity {
+        uint256 transactionCount; // this will be used by Sactivity
+        uint256 lastTransactionTimeStamp; // this will be used by Hholding
+    }
+
+    uint256 public totalTransactions; // increase this every time a transaction happens (minting or transfer)
+    uint256 public totalUsers; // this will point to end of the mapping to calculate total unique user count
+    // before increasing it, check if this address already exists in mapping or not
+    mapping(address => UserActivity) public userActivities;
 
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
         // include total supply here
@@ -39,27 +51,39 @@ contract Fadra is ERC20 {
      * Sactivity
      */
 
-    function betai() public view returns (uint256) {
-        
-    }
+    function betai() public view returns (uint256) {}
 
     function alphai() public view returns (uint256) {}
 
-    function Sactivity() public view returns (uint256) {
+    function Sactivity(address caller) public view returns (uint256) {
         /**
          * every user's transaction last transaction using (arr.length - 1) that will be last time stamp / 365
          *
          * if this is min then value one then return the value otherwise 1 will be return
          *
          */
+
+        uint256 CallerTransactionCount = userActivities[caller]
+            .transactionCount;
+        uint256 averageTransaction = totalTransactions / totalUsers;
+
+        return CallerTransactionCount / averageTransaction;
     }
 
-    function Hholding() public view returns (uint256) {
+    function Hholding(address caller) public view returns (uint256) {
         /**
          * userTransactions = each user transaction in minting + transfer (maintain through mapping and array)
          *
          * avgTransactions = sum of all user transactions / last address of mapping
          * we'll keep an counter that will point to end of mapping of address vs amount
          */
+
+        uint256 lastTransactionTimeStamp = userActivities[caller]
+            .lastTransactionTimeStamp;
+        uint256 timeDifference = block.timestamp - lastTransactionTimeStamp;
+
+        uint256 activity = (timeDifference * 1e18) / SECONDS_PER_YEAR;
+
+        return activity > SCALE ? SCALE : activity;
     }
 }
