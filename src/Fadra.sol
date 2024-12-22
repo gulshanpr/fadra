@@ -31,4 +31,35 @@ contract Fadra is ERC20 {
 
         super._transfer(from, to, amount);
     }
+
+    /**
+     * betai - progressive bonus
+     * alphai - regressive penalty
+     * Hholding
+     * Sactivity
+     */
+
+    function betai() public view returns (uint256) {
+        
+    }
+
+    function alphai() public view returns (uint256) {}
+
+    function Sactivity() public view returns (uint256) {
+        /**
+         * every user's transaction last transaction using (arr.length - 1) that will be last time stamp / 365
+         *
+         * if this is min then value one then return the value otherwise 1 will be return
+         *
+         */
+    }
+
+    function Hholding() public view returns (uint256) {
+        /**
+         * userTransactions = each user transaction in minting + transfer (maintain through mapping and array)
+         *
+         * avgTransactions = sum of all user transactions / last address of mapping
+         * we'll keep an counter that will point to end of mapping of address vs amount
+         */
+    }
 }
