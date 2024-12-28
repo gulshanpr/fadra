@@ -110,3 +110,6 @@ some measurments:
 edge conditons:
 
 1. make sure user mint and transfer througth only smart contract, if they where able to transfer it from uniswap, transaction fee won't incur.
+
+
+testingasdf
