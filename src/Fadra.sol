@@ -11,6 +11,7 @@ contract Fadra is ERC20 {
     struct UserActivity {
         uint256 transactionCount; // this will be used by Sactivity
         uint256 lastTransactionTimeStamp; // this will be used by Hholding
+       
     }
 
     uint256 public totalTransactions; // increase this every time a transaction happens (minting or transfer)
@@ -30,8 +31,17 @@ contract Fadra is ERC20 {
         );
 
         // here goes the logic of deducting fee from minting token (2% + 2% + 0.85%)
+        //this should be wrapped in require, till Afterfee amount.
+        uint256 LPfee = amountWithDecimals * 2 * 10 ** 2;
+        uint256 RPfee =  amountWithDecimals * 2 * 10 ** 2;
+        uint256 fee =  amountWithDecimals * (85 * 10 ** 2) * 10 ** 2 ;
 
-        _mint(msg.sender, amountWithDecimals);
+        //logic to add it to pools
+
+        uint256 AfterFeeAmount = amountWithDecimals - (LPfee + RPfee + fee);
+
+        //calculated and updated the amount after fee deduction
+        _mint(msg.sender, AfterFeeAmount);
     }
 
     function _transfer(
@@ -40,8 +50,38 @@ contract Fadra is ERC20 {
         uint256 amount
     ) internal override {
         // here goes the logic of deducting fee from transfer token (2% + 2% + 0.85%)
+        //cover it in require
+        uint256 LPfee = amount * 2 * 10 ** 2;
+        uint256 RPfee =  amount * 2 * 10 ** 2;
+        uint256 fee =  amount * (85 * 10 ** 2) * 10 ** 2 ;
 
-        super._transfer(from, to, amount);
+        //logic to add it to pools(need pool wallets I think)
+
+        uint256 AfterFeeAmount = amount - (LPfee + RPfee + fee);
+
+        super._transfer(from, to, AfterFeeAmount);
+    }
+
+    //Reward Calculator 
+
+    function RewardCalc () public view returns (uint256) {
+
+        //components and multipliers 
+        uint256 TotalReward; //get from reward pool
+        uint256 Tokens; //total tokens held by users , what is the logic to calculate.
+        uint256 Beta = betai(msg.sender); //betai 
+        uint256 Alpha = alphai(msg.sender); //alphai
+        uint256 Sact = Sactivity(msg.sender);//Activity
+        uint256 Shol = Hholding(msg.sender);//holding
+
+        uint256 R1 = Tokens * (1+Beta-Alpha) * (1+Shol) * Sact
+
+        //according to formula we need to calculate a summation of R1 of all users.
+        uint256 SumOfR1; //logic to calculate it, most probably dynamically calculate through iterating the mappings 
+
+        uint256 Reward = max(((15 * 10 ** 2)*TotalReward), min( ((999*10**3)*TotalReward), (R1/SumOfR1)))
+
+        return Reward;
     }
 
     /**
@@ -51,9 +91,64 @@ contract Fadra is ERC20 {
      * Sactivity
      */
 
-    function betai() public view returns (uint256) {}
 
-    function alphai() public view returns (uint256) {}
+
+    function betai(
+        address _user
+    ) public view returns (uint256) {
+      
+      //calculating betaBases
+   uint256 BaseBetaMin; //some const
+   uint256 BasebetaMax; //some const
+
+   uint256 Multiplier; // this is reward pool/ Target Rewardpool , calculate it once we get the rewardpool wallet and total rewardpool
+
+         // Constants for beta min and max
+    uint256 betaMin = BaseBetaMin * Multiplier; 
+    uint256 betaMax = BasebetaMax * Multiplier;
+    //depends on basebeta-min-max
+
+    // Maximum possible activity (D_max)
+    uint256 maxActivity;// max activity constant
+
+    //user's activity
+     uint256 UserAct = userActivities[_user].transactionCount;
+
+      uint256 beta =
+            betaMin +
+            ((betaMax - betaMin) * (maxActivity - UserAct)) /
+            maxActivity; 
+
+      return beta ; 
+      //check if everything alright    
+    }
+
+
+
+    function alphai(address _user) public view returns (uint256) {
+        // we will add more props if required.
+        //calculating alphabases
+        uint256 AlphaBaseMax; //some const
+        uint256 AlphaBaseMin; //some const
+
+         uint256 Multiplier; // this is reward pool/ Target Rewardpool , calculate it once we get the rewardpool wallet and total rewardpool
+
+        //calculating alphaminmax 
+        uint256 Alphamax = AlphaBaseMax * Multiplier;
+        uint256 Alphamin = AlphaBaseMin * Multiplier;
+
+          // Maximum possible activity (D_max)
+        uint256 maxActivity;// max activity constant
+
+         //user's activity
+         uint256 UserAct = userActivities[_user].transactionCount;
+
+         uint256 alpha = Alphamin + ((Alphamax - Alphamin)*(UserAct/maxActivity));
+
+         return alpha;
+    //check for the formula here
+
+    }
 
     function Sactivity(address caller) public view returns (uint256) {
         /**
@@ -86,4 +181,26 @@ contract Fadra is ERC20 {
 
         return activity > SCALE ? SCALE : activity;
     }
+
+
+    // min-max helper function 
+
+
+function min(uint256 a, uint256 b) public pure returns (uint256) {
+    if (a < b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+function max(uint256 a, uint256 b) public pure returns (uint256) {
+    if (a > b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+
 }
