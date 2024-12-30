@@ -11,7 +11,6 @@ contract Fadra is ERC20 {
     struct UserActivity {
         uint256 transactionCount; // this will be used by Sactivity
         uint256 lastTransactionTimeStamp; // this will be used by Hholding
-       
     }
 
     uint256 public totalTransactions; // increase this every time a transaction happens (minting or transfer)
@@ -33,8 +32,8 @@ contract Fadra is ERC20 {
         // here goes the logic of deducting fee from minting token (2% + 2% + 0.85%)
         //this should be wrapped in require, till Afterfee amount.
         uint256 LPfee = amountWithDecimals * 2 * 10 ** 2;
-        uint256 RPfee =  amountWithDecimals * 2 * 10 ** 2;
-        uint256 fee =  amountWithDecimals * (85 * 10 ** 2) * 10 ** 2 ;
+        uint256 RPfee = amountWithDecimals * 2 * 10 ** 2;
+        uint256 fee = amountWithDecimals * (85 * 10 ** 2) * 10 ** 2;
 
         //logic to add it to pools
 
@@ -52,8 +51,8 @@ contract Fadra is ERC20 {
         // here goes the logic of deducting fee from transfer token (2% + 2% + 0.85%)
         //cover it in require
         uint256 LPfee = amount * 2 * 10 ** 2;
-        uint256 RPfee =  amount * 2 * 10 ** 2;
-        uint256 fee =  amount * (85 * 10 ** 2) * 10 ** 2 ;
+        uint256 RPfee = amount * 2 * 10 ** 2;
+        uint256 fee = amount * (85 * 10 ** 2) * 10 ** 2;
 
         //logic to add it to pools(need pool wallets I think)
 
@@ -62,24 +61,26 @@ contract Fadra is ERC20 {
         super._transfer(from, to, AfterFeeAmount);
     }
 
-    //Reward Calculator 
+    //Reward Calculator
 
-    function RewardCalc () public view returns (uint256) {
-
-        //components and multipliers 
+    function RewardCalc() public view returns (uint256) {
+        //components and multipliers
         uint256 TotalReward; //get from reward pool
         uint256 Tokens; //total tokens held by users , what is the logic to calculate.
-        uint256 Beta = betai(msg.sender); //betai 
+        uint256 Beta = betai(msg.sender); //betai
         uint256 Alpha = alphai(msg.sender); //alphai
-        uint256 Sact = Sactivity(msg.sender);//Activity
-        uint256 Shol = Hholding(msg.sender);//holding
+        uint256 Sact = Sactivity(msg.sender); //Activity
+        uint256 Shol = Hholding(msg.sender); //holding
 
-        uint256 R1 = Tokens * (1+Beta-Alpha) * (1+Shol) * Sact
+        uint256 R1 = Tokens * (1 + Beta - Alpha) * (1 + Shol) * Sact;
 
         //according to formula we need to calculate a summation of R1 of all users.
-        uint256 SumOfR1; //logic to calculate it, most probably dynamically calculate through iterating the mappings 
+        uint256 SumOfR1; //logic to calculate it, most probably dynamically calculate through iterating the mappings
 
-        uint256 Reward = max(((15 * 10 ** 2)*TotalReward), min( ((999*10**3)*TotalReward), (R1/SumOfR1)))
+        uint256 Reward = max(
+            ((15 * 10 ** 2) * TotalReward),
+            min(((999 * 10 ** 3) * TotalReward), (R1 / SumOfR1))
+        );
 
         return Reward;
     }
@@ -91,39 +92,28 @@ contract Fadra is ERC20 {
      * Sactivity
      */
 
+    function betai(address _user) public view returns (uint256) {
+        //calculating betaBases
+        uint256 BaseBetaMin; //some const
+        uint256 BasebetaMax; //some const
+
+        uint256 Multiplier = betaMultiplier(); // this is reward pool/ Target Rewardpool , calculate it once we get the rewardpool wallet and total rewardpool
+
+        // Constants for beta min and max
+        uint256 betaMin = BaseBetaMin * Multiplier;
+        uint256 betaMax = BasebetaMax * Multiplier;
+        //depends on basebeta-min-max
+
+        // distribution function call
+        uint256 tokenDistributionMulitplier = 1 - getTokenDistribution();
 
 
-    function betai(
-        address _user
-    ) public view returns (uint256) {
-      
-      //calculating betaBases
-   uint256 BaseBetaMin; //some const
-   uint256 BasebetaMax; //some const
+        uint256 beta = betaMin +
+            ((betaMax - betaMin) * tokenDistributionMulitplier);
 
-   uint256 Multiplier; // this is reward pool/ Target Rewardpool , calculate it once we get the rewardpool wallet and total rewardpool
-
-         // Constants for beta min and max
-    uint256 betaMin = BaseBetaMin * Multiplier; 
-    uint256 betaMax = BasebetaMax * Multiplier;
-    //depends on basebeta-min-max
-
-    // Maximum possible activity (D_max)
-    uint256 maxActivity;// max activity constant
-
-    //user's activity
-     uint256 UserAct = userActivities[_user].transactionCount;
-
-      uint256 beta =
-            betaMin +
-            ((betaMax - betaMin) * (maxActivity - UserAct)) /
-            maxActivity; 
-
-      return beta ; 
-      //check if everything alright    
+        return beta;
+        //check if everything alright
     }
-
-
 
     function alphai(address _user) public view returns (uint256) {
         // we will add more props if required.
@@ -131,46 +121,28 @@ contract Fadra is ERC20 {
         uint256 AlphaBaseMax; //some const
         uint256 AlphaBaseMin; //some const
 
-         uint256 Multiplier; // this is reward pool/ Target Rewardpool , calculate it once we get the rewardpool wallet and total rewardpool
+        uint256 Multiplier = alphaMultiplier(); // this is reward pool/ Target Rewardpool , calculate it once we get the rewardpool wallet and total rewardpool
 
-        //calculating alphaminmax 
+        //calculating alphaminmax
         uint256 Alphamax = AlphaBaseMax * Multiplier;
         uint256 Alphamin = AlphaBaseMin * Multiplier;
 
-          // Maximum possible activity (D_max)
-        uint256 maxActivity;// max activity constant
+        // distribution function call
+        uint256 tokenDistributionMulitplier = getTokenDistribution();
 
-         //user's activity
-         uint256 UserAct = userActivities[_user].transactionCount;
+        uint256 alpha = Alphamin +
+            ((Alphamax - Alphamin) * tokenDistributionMulitplier);
 
-         uint256 alpha = Alphamin + ((Alphamax - Alphamin)*(UserAct/maxActivity));
-
-         return alpha;
-    //check for the formula here
-
-    }
-
-    function Sactivity(address caller) public view returns (uint256) {
-        /**
-         * every user's transaction last transaction using (arr.length - 1) that will be last time stamp / 365
-         *
-         * if this is min then value one then return the value otherwise 1 will be return
-         *
-         */
-
-        uint256 CallerTransactionCount = userActivities[caller]
-            .transactionCount;
-        uint256 averageTransaction = totalTransactions / totalUsers;
-
-        return CallerTransactionCount / averageTransaction;
+        return alpha;
+        //check for the formula here
     }
 
     function Hholding(address caller) public view returns (uint256) {
         /**
-         * userTransactions = each user transaction in minting + transfer (maintain through mapping and array)
+         * every user's last transaction using (arr.length - 1) that will be last time stamp / 365 (or just keep one varible to keep track fo last transaction timestamp)
          *
-         * avgTransactions = sum of all user transactions / last address of mapping
-         * we'll keep an counter that will point to end of mapping of address vs amount
+         * if this is min then value one then return the value otherwise 1 will be return
+         *
          */
 
         uint256 lastTransactionTimeStamp = userActivities[caller]
@@ -182,25 +154,49 @@ contract Fadra is ERC20 {
         return activity > SCALE ? SCALE : activity;
     }
 
+    function Sactivity(address caller) public view returns (uint256) {
+        /**
+         * userTransactions = each user transaction in minting + transfer (maintain through mapping and array)
+         *
+         * avgTransactions = sum of all user transactions / last address of mapping
+         * we'll keep an counter that will point to end of mapping of address vs amount
+         */
 
-    // min-max helper function 
+        uint256 CallerTransactionCount = userActivities[caller]
+            .transactionCount;
+        uint256 averageTransaction = totalTransactions / totalUsers;
 
-
-function min(uint256 a, uint256 b) public pure returns (uint256) {
-    if (a < b) {
-        return a;
-    } else {
-        return b;
+        return CallerTransactionCount / averageTransaction;
     }
-}
+    // min-max helper function
 
-function max(uint256 a, uint256 b) public pure returns (uint256) {
-    if (a > b) {
-        return a;
-    } else {
-        return b;
+    function min(uint256 a, uint256 b) public pure returns (uint256) {
+        if (a < b) {
+            return a;
+        } else {
+            return b;
+        }
     }
-}
 
+    function max(uint256 a, uint256 b) public pure returns (uint256) {
+        if (a > b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
 
+    function getTokenDistribution() public pure returns (uint256) {
+        // this will return the values of Di / Dmax that is 
+        // Di = token held by caller
+        // Dmax = max token held by any user
+    }
+
+    function betaMultiplier() public pure returns (uint256) {
+        // this will return the values of RewardPool / TargetRewardPool
+    }
+
+    function alphaMultiplier() public pure returns (uint256) {
+        // this will return the values of TargetActivity / TotalActivity
+    }
 }

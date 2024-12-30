@@ -62,7 +62,7 @@ contract XToken is ERC20 {
      to get to know about reward pool status (its a problem)
 
 
-      
+
      */
 
     // function Hholding(){
@@ -95,22 +95,18 @@ some measurments:
 
 1. Recommended Implementation for first fee logic of transffering token to LP
 
-    Direct Addition to Liquidity Pool:
-        If you want simplicity, you can transfer the 2% in your token directly to the liquidity pool. However, this approach can skew the token-to-base-token ratio over time, leading to price instability.
+   Direct Addition to Liquidity Pool:
+   If you want simplicity, you can transfer the 2% in your token directly to the liquidity pool. However, this approach can skew the token-to-base-token ratio over time, leading to price instability.
 
-    Split and Add Balanced Liquidity:
-        A better approach is to:
-            Take the 2% fee.
-            Swap half of it for the base token (e.g., ETH/USDC).
-            Add both parts (your token and the swapped base token) to the liquidity pool using the DEX's router contract.
-        This keeps the pool balanced and maintains price stability.
+   Split and Add Balanced Liquidity:
+   A better approach is to:
+   Take the 2% fee.
+   Swap half of it for the base token (e.g., ETH/USDC).
+   Add both parts (your token and the swapped base token) to the liquidity pool using the DEX's router contract.
+   This keeps the pool balanced and maintains price stability.
 
-2. 
+2.
 
 edge conditons:
 
 1. make sure user mint and transfer througth only smart contract, if they where able to transfer it from uniswap, transaction fee won't incur.
-
-
-testingasdf
-test2
