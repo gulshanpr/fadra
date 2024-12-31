@@ -2,15 +2,22 @@
 pragma solidity ^0.8.20;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Fadra is ERC20 {
     uint256 public immutable maxSupply = 6942000000 * 10 ** 18;
     uint256 private constant SECONDS_PER_YEAR = 31536000;
     uint256 private constant SCALE = 1e18; // min of 1 from Hholding added precision
-    uint256 MaxTokenMinted = 0 * 10 ** 18
-    
+    uint256 totalRewardPool; // this will be used to keep track how much this contract is holding token
+    address rewardToken;
+    uint256 maxTokenHolder = 0 * 10 ** 18;
+
+    // wallets
+    address lpWallet;
+    address marketingWallet;
 
     struct UserActivity {
+        uint256 balance;
         uint256 transactionCount; // this will be used by Sactivity
         uint256 lastTransactionTimeStamp; // this will be used by Hholding
     }
@@ -20,8 +27,16 @@ contract Fadra is ERC20 {
     // before increasing it, check if this address already exists in mapping or not
     mapping(address => UserActivity) public userActivities;
 
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
+    constructor(
+        string memory name,
+        string memory symbol,
+        address _lpWallet,
+        address _marketingWallet
+    ) ERC20(name, symbol) {
         // include total supply here
+        lpWallet = _lpWallet;
+        marketingWallet = _marketingWallet;
+        rewardToken = address(this);
     }
 
     function mint(uint256 amount) public {
@@ -31,25 +46,31 @@ contract Fadra is ERC20 {
             "Minting exceeds max supply"
         );
 
-        // here goes the logic of deducting fee from minting token (2% + 2% + 0.85%)
-        //this should be wrapped in require, till Afterfee amount.
-        uint256 LPfee = amountWithDecimals * 2 * 10 ** 2;
-        uint256 RPfee = amountWithDecimals * 2 * 10 ** 2;
-        uint256 fee = amountWithDecimals * (85 * 10 ** 2) * 10 ** 2;
+        uint256 LPfee = (amountWithDecimals * 2) / 100; // 2% for Liquidity Pool
+        uint256 RPfee = (amountWithDecimals * 2) / 100; // 2% for Reward Pool
+        uint256 marketingFee = (amountWithDecimals * 85) / 10000; // 0.85% for Marketing
 
-        //logic to add it to pools
+        uint256 totalFee = LPfee + RPfee + marketingFee;
+        uint256 AfterFeeAmount = amountWithDecimals - totalFee;
 
-        uint256 AfterFeeAmount = amountWithDecimals - (LPfee + RPfee + fee);
-        //updating the max token minted by any address, if yes then update (Dmax)
-        if (AfterFeeAmount > MaxTokenMinted) {
-            MaxTokenMinted = AfterFeeAmount
+        _mint(msg.sender, AfterFeeAmount);
+
+        // Add RPfee to the reward pool
+        totalRewardPool += RPfee;
+
+        // Distribute fees to respective wallets
+        IERC20(rewardToken).transfer(lpWallet, LPfee);
+        IERC20(rewardToken).transfer(marketingWallet, marketingFee);
+
+        // to check if this guy is the largest holder
+        uint256 userHolding = balanceOf(msg.sender);
+        if (userHolding > maxTokenHolder) {
+            maxTokenHolder = userHolding;
         }
 
-        //calculated and updated the amount after fee deduction
-        _mint(msg.sender, AfterFeeAmount);
-        // increase counts
-        totalTransactions = totalTransactions + 1;
-        userActivities[msg.sender].transactionCount += 1;
+        // Increment transaction count
+        totalTransactions++;
+        userActivities[msg.sender].transactionCount++;
     }
 
     function _transfer(
@@ -57,26 +78,46 @@ contract Fadra is ERC20 {
         address to,
         uint256 amount
     ) internal override {
-        // here goes the logic of deducting fee from transfer token (2% + 2% + 0.85%)
-        //cover it in require
-        uint256 LPfee = amount * 2 * 10 ** 2;
-        uint256 RPfee = amount * 2 * 10 ** 2;
-        uint256 fee = amount * (85 * 10 ** 2) * 10 ** 2;
+        uint256 LPfee = (amount * 2) / 100; // 2% for Liquidity Pool
+        uint256 RPfee = (amount * 2) / 100; // 2% for Reward Pool
+        uint256 marketingFee = (amount * 85) / 10000; // 0.85% for Marketing
 
-        //logic to add it to pools(need pool wallets I think)
+        uint256 totalFee = LPfee + RPfee + marketingFee;
 
-        uint256 AfterFeeAmount = amount - (LPfee + RPfee + fee);
+        // Ensure the user has approved enough for the fees (totalFee)
+        uint256 allowance = IERC20(rewardToken).allowance(from, address(this));
+        require(allowance >= totalFee, "Not enough allowance for fees");
 
-        super._transfer(from, to, AfterFeeAmount);
+        // Single transferFrom call for total fees
+        IERC20(rewardToken).transferFrom(from, address(this), totalFee);
 
-        //logic to update dmax after transfers, if any 
-        if(getTokenBalance(to) > MaxTokenMinted){
-            MaxTokenMinted = getTokenBalance(to);
+        // Distribute fees to respective wallets
+        IERC20(rewardToken).transfer(lpWallet, LPfee);
+        IERC20(rewardToken).transfer(marketingWallet, marketingFee);
+
+        // Add RPfee to the reward pool
+        totalRewardPool += RPfee;
+
+        uint256 afterFeeAmount = amount - totalFee;
+
+        super._transfer(from, to, afterFeeAmount);
+
+        // Update max token holder
+        uint256 fromUserHolding = balanceOf(from);
+        uint256 toUserHolding = balanceOf(to);
+
+        if (fromUserHolding > maxTokenHolder) {
+            maxTokenHolder = fromUserHolding;
         }
 
-        //increase transaction count
-        totalTransactions = totalTransactions + 1;
-        userActivities[msg.sender].transactionCount += 1;
+        if (toUserHolding > maxTokenHolder) {
+            maxTokenHolder = toUserHolding;
+        }
+
+        // Increment transaction count for both sender and receiver
+        totalTransactions++;
+        userActivities[from].transactionCount++;
+        userActivities[to].transactionCount++; // Track receiver's transaction count as well
     }
 
     //Reward Calculator
@@ -124,7 +165,6 @@ contract Fadra is ERC20 {
 
         // distribution function call
         uint256 tokenDistributionMulitplier = 1 - getTokenDistribution(_user);
-
 
         uint256 beta = betaMin +
             ((betaMax - betaMin) * tokenDistributionMulitplier);
@@ -181,7 +221,7 @@ contract Fadra is ERC20 {
          */
 
         uint256 CallerTransactionCount = userActivities[caller]
-            .transactionCount;
+            .transactionCount; // userTransactions count
         uint256 averageTransaction = totalTransactions / totalUsers;
 
         return CallerTransactionCount / averageTransaction;
@@ -206,27 +246,27 @@ contract Fadra is ERC20 {
     }
 
     function getTokenDistribution(address _user) public pure returns (uint256) {
-        // this will return the values of Di / Dmax that is 
-       uint256 Di = getTokenBalance(_user);
-       uint256 Dmax = MaxTokenMinted;
+        // this will return the values of Di / Dmax that is
+        uint256 Di = balanceOf(_user);
+        uint256 Dmax = maxTokenHolder;
 
-       return (Di / Dmax) ; //check please
+        return (Di / Dmax); //check please
     }
 
     function betaMultiplier() public pure returns (uint256) {
         // this will return the values of RewardPool / TargetRewardPool
+        // rewardPool/totalRewardPool is total reward pool
+        // targetRewardPool is some constant
+        uint256 targetRewardPool = 1200; // some constant
+
+        return (totalRewardPool / targetRewardPool);
     }
 
     function alphaMultiplier() public pure returns (uint256) {
         // this will return the values of TargetActivity / TotalActivity
-        uint256 TargetActivity = 1200 // constant
+        uint256 TargetActivity = 600; // constant
         uint256 TotalActivity = totalTransactions;
 
         return (TargetActivity / TotalActivity); // check please
-    }
-
-     // Function to get the balance of a user for this token
-    function getTokenBalance(address user) public view returns (uint256) {
-        return balanceOf(user); // `balanceOf` is inherited from ERC20
     }
 }
