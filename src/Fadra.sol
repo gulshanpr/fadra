@@ -7,6 +7,8 @@ contract Fadra is ERC20 {
     uint256 public immutable maxSupply = 6942000000 * 10 ** 18;
     uint256 private constant SECONDS_PER_YEAR = 31536000;
     uint256 private constant SCALE = 1e18; // min of 1 from Hholding added precision
+    uint256 MaxTokenMinted = 0 * 10 ** 18
+    
 
     struct UserActivity {
         uint256 transactionCount; // this will be used by Sactivity
@@ -38,9 +40,16 @@ contract Fadra is ERC20 {
         //logic to add it to pools
 
         uint256 AfterFeeAmount = amountWithDecimals - (LPfee + RPfee + fee);
+        //updating the max token minted by any address, if yes then update (Dmax)
+        if (AfterFeeAmount > MaxTokenMinted) {
+            MaxTokenMinted = AfterFeeAmount
+        }
 
         //calculated and updated the amount after fee deduction
         _mint(msg.sender, AfterFeeAmount);
+        // increase counts
+        totalTransactions = totalTransactions + 1;
+        userActivities[msg.sender].transactionCount += 1;
     }
 
     function _transfer(
@@ -59,6 +68,15 @@ contract Fadra is ERC20 {
         uint256 AfterFeeAmount = amount - (LPfee + RPfee + fee);
 
         super._transfer(from, to, AfterFeeAmount);
+
+        //logic to update dmax after transfers, if any 
+        if(getTokenBalance(to) > MaxTokenMinted){
+            MaxTokenMinted = getTokenBalance(to);
+        }
+
+        //increase transaction count
+        totalTransactions = totalTransactions + 1;
+        userActivities[msg.sender].transactionCount += 1;
     }
 
     //Reward Calculator
@@ -105,7 +123,7 @@ contract Fadra is ERC20 {
         //depends on basebeta-min-max
 
         // distribution function call
-        uint256 tokenDistributionMulitplier = 1 - getTokenDistribution();
+        uint256 tokenDistributionMulitplier = 1 - getTokenDistribution(_user);
 
 
         uint256 beta = betaMin +
@@ -128,7 +146,7 @@ contract Fadra is ERC20 {
         uint256 Alphamin = AlphaBaseMin * Multiplier;
 
         // distribution function call
-        uint256 tokenDistributionMulitplier = getTokenDistribution();
+        uint256 tokenDistributionMulitplier = getTokenDistribution(_user);
 
         uint256 alpha = Alphamin +
             ((Alphamax - Alphamin) * tokenDistributionMulitplier);
@@ -168,7 +186,8 @@ contract Fadra is ERC20 {
 
         return CallerTransactionCount / averageTransaction;
     }
-    // min-max helper function
+
+    // helper functions
 
     function min(uint256 a, uint256 b) public pure returns (uint256) {
         if (a < b) {
@@ -186,10 +205,12 @@ contract Fadra is ERC20 {
         }
     }
 
-    function getTokenDistribution() public pure returns (uint256) {
+    function getTokenDistribution(address _user) public pure returns (uint256) {
         // this will return the values of Di / Dmax that is 
-        // Di = token held by caller
-        // Dmax = max token held by any user
+       uint256 Di = getTokenBalance(_user);
+       uint256 Dmax = MaxTokenMinted;
+
+       return (Di / Dmax) ; //check please
     }
 
     function betaMultiplier() public pure returns (uint256) {
@@ -198,5 +219,14 @@ contract Fadra is ERC20 {
 
     function alphaMultiplier() public pure returns (uint256) {
         // this will return the values of TargetActivity / TotalActivity
+        uint256 TargetActivity = 1200 // constant
+        uint256 TotalActivity = totalTransactions;
+
+        return (TargetActivity / TotalActivity); // check please
+    }
+
+     // Function to get the balance of a user for this token
+    function getTokenBalance(address user) public view returns (uint256) {
+        return balanceOf(user); // `balanceOf` is inherited from ERC20
     }
 }
