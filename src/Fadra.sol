@@ -266,7 +266,7 @@ contract Fadra is ERC20 {
         }
     }
 
-    function getTokenDistribution(address _user) public pure returns (uint256) {
+    function getTokenDistribution(address _user) public view returns (uint256) {
         // this will return the values of Di / Dmax that is
         uint256 Di = balanceOf(_user);
         uint256 Dmax = maxTokenHolder;
@@ -274,7 +274,7 @@ contract Fadra is ERC20 {
         return (Di / Dmax); //check please
     }
 
-    function betaMultiplier() public pure returns (uint256) {
+    function betaMultiplier() public view returns (uint256) {
         // this will return the values of RewardPool / TargetRewardPool
         // rewardPool/totalRewardPool is total reward pool
         // targetRewardPool is some constant
@@ -283,12 +283,11 @@ contract Fadra is ERC20 {
         return (totalRewardPool / targetRewardPool);
     }
 
-    function alphaMultiplier() public pure returns (uint256) {
+    function alphaMultiplier() public view returns (uint256) {
         // this will return the values of TargetActivity / TotalActivity
         uint256 TargetActivity = 600; // constant
-        uint256 TotalActivity = totalTransactions;
 
-        return (TargetActivity / TotalActivity); // check please
+        return (TargetActivity / totalTransactions); // check please
     }
 
     function updateUserContribution(
