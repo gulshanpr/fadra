@@ -110,3 +110,20 @@ some measurments:
 edge conditons:
 
 1. make sure user mint and transfer througth only smart contract, if they where able to transfer it from uniswap, transaction fee won't incur.
+
+
+02 Jan 2025
+
+todos
+
+- finish token contract (done)
+- make the contract more finish 
+- implement the summation logic (done)
+- complete reward contract (done)
+- fix all the error
+
+- step up timestamp in user activity (done)
+- step up transaction count in user activity (done)
+
+- add validation to ensure fee is transferred to respective wallets
+- is there any cost of minting token for user

@@ -15,6 +15,11 @@ contract Fadra is ERC20 {
     // wallets
     address lpWallet;
     address marketingWallet;
+    address thisContractAddress;
+
+    // summation of Ri denominator for all users
+    mapping(address => uint256) public userContribution; // Tracks each user's current contribution
+    uint256 public globalSummation; // Global summation of all contributions
 
     struct UserActivity {
         uint256 balance;
@@ -37,6 +42,7 @@ contract Fadra is ERC20 {
         lpWallet = _lpWallet;
         marketingWallet = _marketingWallet;
         rewardToken = address(this);
+        thisContractAddress = address(this);
     }
 
     function mint(uint256 amount) public {
@@ -71,6 +77,15 @@ contract Fadra is ERC20 {
         // Increment transaction count
         totalTransactions++;
         userActivities[msg.sender].transactionCount++;
+        userActivities[msg.sender].lastTransactionTimeStamp = block.timestamp;
+        updateUserContribution(
+            msg.sender,
+            balanceOf(msg.sender),
+            betai(msg.sender),
+            alphai(msg.sender),
+            Hholding(msg.sender),
+            Sactivity(msg.sender)
+        );
     }
 
     function _transfer(
@@ -118,27 +133,33 @@ contract Fadra is ERC20 {
         totalTransactions++;
         userActivities[from].transactionCount++;
         userActivities[to].transactionCount++; // Track receiver's transaction count as well
+        userActivities[from].lastTransactionTimeStamp = block.timestamp;
+        updateUserContribution(
+            msg.sender,
+            balanceOf(msg.sender),
+            betai(msg.sender),
+            alphai(msg.sender),
+            Hholding(msg.sender),
+            Sactivity(msg.sender)
+        );
     }
 
     //Reward Calculator
 
     function RewardCalc() public view returns (uint256) {
         //components and multipliers
-        uint256 TotalReward; //get from reward pool
-        uint256 Tokens; //total tokens held by users , what is the logic to calculate.
+        uint256 TotalReward = totalRewardPool; //get from reward pool (Treward)
+        uint256 Tokens = balanceOf(msg.sender); //total tokens held by users , what is the logic to calculate.
         uint256 Beta = betai(msg.sender); //betai
         uint256 Alpha = alphai(msg.sender); //alphai
         uint256 Sact = Sactivity(msg.sender); //Activity
-        uint256 Shol = Hholding(msg.sender); //holding
+        uint256 Hhol = Hholding(msg.sender); //holding
 
-        uint256 R1 = Tokens * (1 + Beta - Alpha) * (1 + Shol) * Sact;
-
-        //according to formula we need to calculate a summation of R1 of all users.
-        uint256 SumOfR1; //logic to calculate it, most probably dynamically calculate through iterating the mappings
+        uint256 R1 = Tokens * (1 + Beta - Alpha) * (1 + Hhol) * Sact;
 
         uint256 Reward = max(
             ((15 * 10 ** 2) * TotalReward),
-            min(((999 * 10 ** 3) * TotalReward), (R1 / SumOfR1))
+            min(((999 * 10 ** 3) * TotalReward), (R1 / globalSummation))
         );
 
         return Reward;
@@ -268,5 +289,29 @@ contract Fadra is ERC20 {
         uint256 TotalActivity = totalTransactions;
 
         return (TargetActivity / TotalActivity); // check please
+    }
+
+    function updateUserContribution(
+        address user,
+        uint256 token,
+        uint256 beta,
+        uint256 alpha,
+        uint256 H_holding,
+        uint256 S_activity
+    ) internal {
+        // Step 1: Remove the old contribution
+        globalSummation -= userContribution[user];
+
+        // Step 2: Calculate the new contribution
+        uint256 newContribution = token *
+            (1 + beta - alpha) *
+            (1 + H_holding) *
+            S_activity;
+
+        // Step 3: Update the user's contribution
+        userContribution[user] = newContribution;
+
+        // Step 4: Add the new contribution to the total
+        globalSummation += newContribution;
     }
 }
