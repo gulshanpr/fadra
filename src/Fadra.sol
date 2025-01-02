@@ -64,8 +64,15 @@ contract Fadra is ERC20 {
         _mint(msg.sender, afterFeeAmount);
         totalRewardPool += RPfee;
 
-        IERC20(rewardToken).transfer(lpWallet, LPfee);
-        IERC20(rewardToken).transfer(marketingWallet, marketingFee);
+        require(
+            IERC20(rewardToken).transfer(lpWallet, LPfee),
+            "Transfer to LP wallet failed"
+        );
+
+        require(
+            IERC20(rewardToken).transfer(marketingWallet, marketingFee),
+            "Transfer to Marketing wallet failed"
+        );
 
         _updateUserActivity(msg.sender);
         _updateMaxTokenHolder(msg.sender);
@@ -76,6 +83,10 @@ contract Fadra is ERC20 {
         address to,
         uint256 amount
     ) internal override {
+
+        require(from != address(0), "Sender address cannot be zero");
+        require(to != address(0), "Recipient address cannot be zero");
+        require(amount > 0, "Transfer amount must be greater than zero");
         (
             uint256 LPfee,
             uint256 RPfee,
@@ -83,15 +94,27 @@ contract Fadra is ERC20 {
             uint256 afterFeeAmount
         ) = _calculateFees(amount);
 
-        IERC20(rewardToken).transferFrom(
-            from,
-            address(this),
-            LPfee + RPfee + marketingFee
-        );
-        totalRewardPool += RPfee;
+        uint256 totalFee = LPfee + RPfee + marketingFee;
 
-        IERC20(rewardToken).transfer(lpWallet, LPfee);
-        IERC20(rewardToken).transfer(marketingWallet, marketingFee);
+        require(
+            IERC20(rewardToken).allowance(from, address(this)) >= totalFee,
+            "Insufficient allowance for fees"
+        );
+
+        require(
+            IERC20(rewardToken).transferFrom(from, address(this), totalFee),
+            "Transfer failed"
+        );
+
+        totalRewardPool += RPfee;
+        require(
+            IERC20(rewardToken).transfer(lpWallet, LPfee),
+            "Transfer to LP wallet failed"
+        );
+        require(
+            IERC20(rewardToken).transfer(marketingWallet, marketingFee),
+            "Transfer to Marketing wallet failed"
+        );
 
         super._transfer(from, to, afterFeeAmount);
 
@@ -104,7 +127,7 @@ contract Fadra is ERC20 {
     function _calculateFees(
         uint256 amount
     )
-        internal
+        private
         pure
         returns (
             uint256 LPfee,
@@ -137,7 +160,8 @@ contract Fadra is ERC20 {
         return reward;
     }
 
-    function betai(address user) public view returns (uint256) {
+    function betai(address user) private view returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
         uint256 tokenDistributionMultiplier = 1 - getTokenDistribution(user);
         uint256 betaMin = (BASE_BETA_MIN * totalRewardPool) /
             TARGET_REWARD_POOL;
@@ -146,7 +170,8 @@ contract Fadra is ERC20 {
         return betaMin + (betaMax - betaMin) * tokenDistributionMultiplier;
     }
 
-    function alphai(address user) public view returns (uint256) {
+    function alphai(address user) private view returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
         uint256 tokenDistributionMultiplier = getTokenDistribution(user);
         uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
             totalTransactions;
@@ -155,25 +180,29 @@ contract Fadra is ERC20 {
         return alphaMin + (alphaMax - alphaMin) * tokenDistributionMultiplier;
     }
 
-    function Hholding(address user) public view returns (uint256) {
+    function Hholding(address user) private view returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
         uint256 lastTx = userActivities[user].lastTransactionTimestamp;
         uint256 timeDiff = block.timestamp - lastTx;
         uint256 activity = (timeDiff * SCALE) / SECONDS_PER_YEAR;
         return activity > SCALE ? SCALE : activity;
     }
 
-    function Sactivity(address user) public view returns (uint256) {
+    function Sactivity(address user) private view returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
         uint256 userTxCount = userActivities[user].transactionCount;
         uint256 averageTx = totalTransactions / totalUsers;
         return (userTxCount * SCALE) / averageTx;
     }
 
-    function getTokenDistribution(address user) public view returns (uint256) {
+    function getTokenDistribution(address user) private view returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
         uint256 userTokens = balanceOf(user);
         return (userTokens * SCALE) / maxTokenHolder;
     }
 
-    function _updateUserActivity(address user) internal {
+    function _updateUserActivity(address user) private {
+        require(user != address(0), "Sender address cannot be zero");
         if (userActivities[user].transactionCount == 0) {
             totalUsers++;
         }
@@ -181,14 +210,16 @@ contract Fadra is ERC20 {
         userActivities[user].lastTransactionTimestamp = block.timestamp;
     }
 
-    function _updateMaxTokenHolder(address user) internal {
+    function _updateMaxTokenHolder(address user) private {
+        require(user != address(0), "Sender address cannot be zero");
         uint256 userHolding = balanceOf(user);
         if (userHolding > maxTokenHolder) {
             maxTokenHolder = userHolding;
         }
     }
 
-    function updateUserContribution(address user) internal {
+    function updateUserContribution(address user) private {
+        require(user != address(0), "Sender address cannot be zero");
         globalSummation -= userContribution[user];
         uint256 newContribution = balanceOf(user) *
             (1 + betai(user) - alphai(user)) *
@@ -198,11 +229,11 @@ contract Fadra is ERC20 {
         globalSummation += newContribution;
     }
 
-    function min(uint256 a, uint256 b) public pure returns (uint256) {
+    function min(uint256 a, uint256 b) private pure returns (uint256) {
         return a < b ? a : b;
     }
 
-    function max(uint256 a, uint256 b) public pure returns (uint256) {
+    function max(uint256 a, uint256 b) private pure returns (uint256) {
         return a > b ? a : b;
     }
 }
