@@ -23,6 +23,7 @@ contract Fadra is ERC20 {
         uint256 balance;
         uint256 transactionCount;
         uint256 lastTransactionTimestamp;
+        uint256 reward;
     }
 
     uint256 public totalTransactions; // Total transactions across the contract
@@ -47,6 +48,7 @@ contract Fadra is ERC20 {
         rewardToken = address(this);
     }
 
+    // minting function [transactions]
     function mint(uint256 amount) public {
         uint256 amountWithDecimals = amount * 10 ** 18;
         require(
@@ -78,6 +80,7 @@ contract Fadra is ERC20 {
         _updateMaxTokenHolder(msg.sender);
     }
 
+    // transfer function [transaction]
     function _transfer(
         address from,
         address to,
@@ -122,8 +125,23 @@ contract Fadra is ERC20 {
         _updateUserActivity(to);
         _updateMaxTokenHolder(from);
         _updateMaxTokenHolder(to);
+
+        //calculating reward and storing it.
+        userActivities[from].reward += RewardCalc(from);
     }
 
+    function RewardTransfer() {
+        //get calculated reward from user struct
+        uint256 reward = userActivities[msg.sender].reward;
+        //check for the balance available in the reward pool, may be if-else but require sounds better.
+        require(
+            reward < balanceOf(lpWallet);
+        );
+        //transfer the amount from rp wallet to msg.sender 
+        // write the transfer logic here. 
+    }
+
+   //fee calculator
     function _calculateFees(
         uint256 amount
     )
@@ -142,12 +160,13 @@ contract Fadra is ERC20 {
         afterFeeAmount = amount - (LPfee + RPfee + marketingFee);
     }
 
-    function RewardCalc() public view returns (uint256) {
-        uint256 Tokens = balanceOf(msg.sender);
-        uint256 Beta = betai(msg.sender);
-        uint256 Alpha = alphai(msg.sender);
-        uint256 Sact = Sactivity(msg.sender);
-        uint256 Hhol = Hholding(msg.sender);
+     //reward calculator
+    function RewardCalc(address _user) public view returns (uint256) {
+        uint256 Tokens = balanceOf(_user);
+        uint256 Beta = betai(_user);
+        uint256 Alpha = alphai(_user);
+        uint256 Sact = Sactivity(_user);
+        uint256 Hhol = Hholding(_user);
 
         uint256 numerator = Tokens * (1 + Beta - Alpha) * (1 + Hhol) * Sact;
         uint256 denominator = globalSummation;
@@ -159,6 +178,9 @@ contract Fadra is ERC20 {
 
         return reward;
     }
+
+
+    //helper functions and multipliers
 
     function betai(address user) private view returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
