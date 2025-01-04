@@ -7,10 +7,12 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract Fadra is ERC20 {
     uint256 public immutable maxSupply = 6_942_000_000 * 10 ** 18;
     uint256 private constant SECONDS_PER_YEAR = 31536000;
+    uint256 private constant SECONDS_IN_THREE_MONTHS = 7776000;
     uint256 private constant SCALE = 1e18; // Minimum value with added precision
 
     uint256 public totalRewardPool; // Tracks reward pool balance
     uint256 public maxTokenHolder = 0; // Maximum tokens held by a single user
+    uint256 public contractTimestamp;
 
     address public rewardToken;
     address public lpWallet;
@@ -46,6 +48,7 @@ contract Fadra is ERC20 {
         lpWallet = _lpWallet;
         marketingWallet = _marketingWallet;
         rewardToken = address(this);
+        contractTimestamp = block.timestamp;
     }
 
     // minting function [transactions]
@@ -76,6 +79,16 @@ contract Fadra is ERC20 {
             "Transfer to Marketing wallet failed"
         );
 
+        // in testing take care of
+        // if user doesn't exists when calling rewardCalc function in _mint function
+        uint256 reward = RewardCalc(msg.sender);
+        if (reward > 100) {
+            require(
+                IERC20(rewardToken).transfer(msg.sender, reward),
+                "Reward transfer failed"
+            );
+        }
+
         _updateUserActivity(msg.sender);
         _updateMaxTokenHolder(msg.sender);
     }
@@ -86,7 +99,6 @@ contract Fadra is ERC20 {
         address to,
         uint256 amount
     ) internal override {
-
         require(from != address(0), "Sender address cannot be zero");
         require(to != address(0), "Recipient address cannot be zero");
         require(amount > 0, "Transfer amount must be greater than zero");
@@ -121,27 +133,21 @@ contract Fadra is ERC20 {
 
         super._transfer(from, to, afterFeeAmount);
 
+        uint256 reward = RewardCalc(from);
+        // 100 is just a placeholder value here
+        if (reward > 100) {
+            require(
+                IERC20(rewardToken).transfer(from, reward),
+                "Reward transfer failed"
+            );
+        }
         _updateUserActivity(from);
         _updateUserActivity(to);
         _updateMaxTokenHolder(from);
         _updateMaxTokenHolder(to);
-
-        //calculating reward and storing it.
-        userActivities[from].reward += RewardCalc(from);
     }
 
-    function RewardTransfer() {
-        //get calculated reward from user struct
-        uint256 reward = userActivities[msg.sender].reward;
-        //check for the balance available in the reward pool, may be if-else but require sounds better.
-        require(
-            reward < balanceOf(lpWallet);
-        );
-        //transfer the amount from rp wallet to msg.sender 
-        // write the transfer logic here. 
-    }
-
-   //fee calculator
+    //fee calculator
     function _calculateFees(
         uint256 amount
     )
@@ -160,8 +166,8 @@ contract Fadra is ERC20 {
         afterFeeAmount = amount - (LPfee + RPfee + marketingFee);
     }
 
-     //reward calculator
-    function RewardCalc(address _user) public view returns (uint256) {
+    //reward calculator
+    function RewardCalc(address _user) public returns (uint256) {
         uint256 Tokens = balanceOf(_user);
         uint256 Beta = betai(_user);
         uint256 Alpha = alphai(_user);
@@ -176,11 +182,13 @@ contract Fadra is ERC20 {
             min((999 * totalRewardPool) / 1000, numerator / denominator)
         );
 
+        fallBack();
         return reward;
     }
 
-
     //helper functions and multipliers
+
+    // in test check if some values are zero or doesn't exists what will happen (remove this afer test)
 
     function betai(address user) private view returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
@@ -215,6 +223,26 @@ contract Fadra is ERC20 {
         uint256 userTxCount = userActivities[user].transactionCount;
         uint256 averageTx = totalTransactions / totalUsers;
         return (userTxCount * SCALE) / averageTx;
+    }
+
+    function fallBack() private returns (bool) {
+        bool isThreeMonthPassed = ((block.timestamp - contractTimestamp) >=
+            SECONDS_IN_THREE_MONTHS);
+        if (isThreeMonthPassed && totalTransactions <= 1000) {
+            // transfer all reward pool token to marketing wallet
+            require(
+                IERC20(rewardToken).transfer(marketingWallet, totalRewardPool),
+                "Token transfer failed"
+            );
+
+            totalRewardPool = 0;
+            return true;
+        } else if (isThreeMonthPassed && totalTransactions > 1000) {
+            contractTimestamp = block.timestamp;
+            return false;
+        } else {
+            return false;
+        }
     }
 
     function getTokenDistribution(address user) private view returns (uint256) {
