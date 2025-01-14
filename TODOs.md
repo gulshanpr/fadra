@@ -127,3 +127,7 @@ todos
 
 - add validation to ensure fee is transferred to respective wallets
 - is there any cost of minting token for user
+
+
+
+https://docs.google.com/document/d/1tq4CJf4CgV7G1CYy_u5Ti1A2k1igXwIz7O8pwkPYQBU/edit?usp=sharing

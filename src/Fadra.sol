@@ -5,20 +5,21 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Fadra is ERC20 {
-    uint256 public immutable maxSupply = 6_942_000_000 * 10 ** 18;
+    uint256 public immutable maxSupply = 6_942_000_000 * 10 ** 18; // no need to hard code, we will get this value upon deployment
     uint256 private constant SECONDS_PER_YEAR = 31536000;
     uint256 private constant SECONDS_IN_THREE_MONTHS = 7776000;
     uint256 private constant SCALE = 1e18; // Minimum value with added precision
-    
-    uint256 TotalcalculatedReward;// needed for shortfall
+
+    uint256 TotalcalculatedReward; // needed for shortfall
 
     uint256 public totalRewardPool; // Tracks reward pool balance
     uint256 public maxTokenHolder = 0; // Maximum tokens held by a single user
     uint256 public contractTimestamp;
 
     address public rewardToken;
-    address public lpWallet;
-    address public marketingWallet;
+    address private lpWallet;
+    address private marketingWallet;
+    address public owner;
 
     mapping(address => uint256) public userContribution; // Tracks user contributions
     uint256 public globalSummation; // Global summation of all contributions
@@ -47,13 +48,16 @@ contract Fadra is ERC20 {
         address _lpWallet,
         address _marketingWallet
     ) ERC20(name, symbol) {
+        owner = msg.sender;
         lpWallet = _lpWallet;
         marketingWallet = _marketingWallet;
         rewardToken = address(this);
         contractTimestamp = block.timestamp;
+        _mint(owner, maxSupply);
     }
 
     // minting function [transactions]
+    // gotta remove the logic in mint function
     function mint(uint256 amount) public {
         uint256 amountWithDecimals = amount * 10 ** 18;
         require(
@@ -85,21 +89,21 @@ contract Fadra is ERC20 {
         // if user doesn't exists when calling rewardCalc function in _mint function
         uint256 reward = RewardCalc(msg.sender);
         TotalcalculatedReward = TotalcalculatedReward + reward;
-          // make another check in the if block i.e whether the reward is available in the pool or not ****imp****
-        if (reward > 100 && totalRewardPool> reward) {
+        // make another check in the if block i.e whether the reward is available in the pool or not ****imp****
+        if (reward > 100 && totalRewardPool > reward) {
             require(
                 IERC20(rewardToken).transfer(msg.sender, reward),
                 "Reward transfer failed"
             );
-        }else {
+        } else {
             //shortfall : if the reward of user is not in the reward pool.
-    //    uint256 RevisedReward = reward * (totalRewardPool/TotalcalculatedReward); 
-    //    require(
-    //             IERC20(rewardToken).transfer(msg.sender, RevisedReward),
-    //             "Reward transfer failed"
-    //         );
+            //    uint256 RevisedReward = reward * (totalRewardPool/TotalcalculatedReward);
+            //    require(
+            //             IERC20(rewardToken).transfer(msg.sender, RevisedReward),
+            //             "Reward transfer failed"
+            //         );
             //wrapped the above logic in this function
-            shortfall(reward, msg.sender)
+            shortfall(reward, msg.sender);
         }
 
         _updateUserActivity(msg.sender);
@@ -147,24 +151,24 @@ contract Fadra is ERC20 {
         super._transfer(from, to, afterFeeAmount);
 
         uint256 reward = RewardCalc(from);
-         TotalcalculatedReward = TotalcalculatedReward + reward;
+        TotalcalculatedReward = TotalcalculatedReward + reward;
         // 100 is just a placeholder value here
         // make another check in the if block i.e whether the reward is available in the pool or not ****imp****
-        if (reward > 100 && balanceOf(this)) {
+        if ((reward > 100) && (balanceOf(address(this)) > 100)) {
             require(
                 IERC20(rewardToken).transfer(from, reward),
                 "Reward transfer failed"
             );
         } else {
             //shortfall : if the reward of user is not in the reward pool.
-    //    uint256 RevisedReward = reward * (balanceOf(this)/TotalcalculatedReward); //idk how to check the value available in the contract [i tried]
-    //    require(
-    //             IERC20(rewardToken).transfer(from, RevisedReward),
-    //             "Reward transfer failed"
-    //         );
+            //    uint256 RevisedReward = reward * (balanceOf(this)/TotalcalculatedReward); //idk how to check the value available in the contract [i tried]
+            //    require(
+            //             IERC20(rewardToken).transfer(from, RevisedReward),
+            //             "Reward transfer failed"
+            //         );
 
-        // wrapped the above logic in this function
-        shortfall(reward, from)    
+            // wrapped the above logic in this function
+            shortfall(reward, from);
         }
         _updateUserActivity(from);
         _updateUserActivity(to);
@@ -232,7 +236,6 @@ contract Fadra is ERC20 {
             totalTransactions;
         uint256 alphaMax = (BASE_ALPHA_MAX * TARGET_ACTIVITY) /
             totalTransactions;
-
 
         return alphaMin + (alphaMax - alphaMin) * tokenDistributionMultiplier;
     }
@@ -304,15 +307,16 @@ contract Fadra is ERC20 {
             Sactivity(user);
         userContribution[user] = newContribution;
         globalSummation += newContribution;
-    } 
+    }
 
-//shortfall function
-    function shortfall(uint256 _reward , address rewardGainer) private {
-   uint256 RevisedReward = _reward * (totalRewardPool/TotalcalculatedReward); 
-       require(
-                IERC20(rewardToken).transfer(rewardGainer, RevisedReward),
-                "Reward transfer failed"
-            );
+    //shortfall function
+    function shortfall(uint256 _reward, address rewardGainer) private {
+        uint256 RevisedReward = _reward *
+            (totalRewardPool / TotalcalculatedReward);
+        require(
+            IERC20(rewardToken).transfer(rewardGainer, RevisedReward),
+            "Reward transfer failed"
+        );
     }
 
     function min(uint256 a, uint256 b) private pure returns (uint256) {
