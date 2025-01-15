@@ -5,6 +5,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Fadra is ERC20 {
+
+    // I had to make everything public because of the test.
     uint256 public immutable maxSupply = 6_942_000_000 * 10 ** 18; // no need to hard code, we will get this value upon deployment
     uint256 public constant SECONDS_PER_YEAR = 31536000;
     uint256 public constant SECONDS_IN_THREE_MONTHS = 7776000;
