@@ -64,6 +64,7 @@ contract Fadra is ERC20 {
             totalSupply() + amountWithDecimals <= maxSupply,
             "Minting exceeds max supply"
         );
+        // check if this function is working correctly after users try to mint for(pass this function is this fails)
     }
 
     // transfer function [transaction]
@@ -120,6 +121,8 @@ contract Fadra is ERC20 {
         _updateUserActivity(to);
         _updateMaxTokenHolder(from);
         _updateMaxTokenHolder(to);
+        // check if one does transfer is this updating all states and is this transferring value to address or not?
+        // also check for the allowance and 100 reward token limit, only transfer reward if 100 token is accumulate
     }
 
     //fee calculator
@@ -135,10 +138,14 @@ contract Fadra is ERC20 {
             uint256 afterFeeAmount
         )
     {
-        LPfee = (amount * 2) / 100; // 2%
-        RPfee = (amount * 2) / 100; // 2%
-        marketingFee = (amount * 85) / 10000; // 0.85%
+        LPfee = (amount * 2) / 100;
+        RPfee = (amount * 2) / 100;
+        marketingFee = (amount * 85) / 10000;
+
         afterFeeAmount = amount - (LPfee + RPfee + marketingFee);
+
+        return (LPfee, RPfee, marketingFee, afterFeeAmount);
+        // is this calculating values correctly?
     }
 
     //reward calculator
@@ -159,6 +166,7 @@ contract Fadra is ERC20 {
 
         fallBack();
         return reward;
+        // check if we are getting values for all functions
     }
 
     //helper functions and multipliers
@@ -173,6 +181,7 @@ contract Fadra is ERC20 {
         uint256 betaMax = (BASE_BETA_MAX * totalRewardPool) /
             TARGET_REWARD_POOL;
         return betaMin + (betaMax - betaMin) * tokenDistributionMultiplier;
+        // check if we are getting values for all functions
     }
 
     function alphai(address user) private view returns (uint256) {
@@ -184,6 +193,7 @@ contract Fadra is ERC20 {
             totalTransactions;
 
         return alphaMin + (alphaMax - alphaMin) * tokenDistributionMultiplier;
+        // check if we are getting values for all functions
     }
 
     function Hholding(address user) private view returns (uint256) {
@@ -192,6 +202,8 @@ contract Fadra is ERC20 {
         uint256 timeDiff = block.timestamp - lastTx;
         uint256 activity = (timeDiff * SCALE) / SECONDS_PER_YEAR;
         return activity > SCALE ? SCALE : activity;
+        // check if all values are fetching from struct or not
+        // check if activity if greater than scale and not greater then scale
     }
 
     function Sactivity(address user) private view returns (uint256) {
@@ -199,6 +211,7 @@ contract Fadra is ERC20 {
         uint256 userTxCount = userActivities[user].transactionCount;
         uint256 averageTx = totalTransactions / totalUsers;
         return (userTxCount * SCALE) / averageTx;
+        // check if all values are fetching from struct or not
     }
 
     function fallBack() private returns (bool) {
@@ -210,12 +223,13 @@ contract Fadra is ERC20 {
                 IERC20(rewardToken).transfer(marketingWallet, totalRewardPool),
                 "Token transfer failed"
             );
-
+            // is transfer happening or not
             totalRewardPool = 0;
             return true;
         } else if (isThreeMonthPassed && totalTransactions > 1000) {
             contractTimestamp = block.timestamp;
             return false;
+            // check this condition
         } else {
             return false;
         }
@@ -225,6 +239,8 @@ contract Fadra is ERC20 {
         require(user != address(0), "Sender address cannot be zero");
         uint256 userTokens = balanceOf(user);
         return (userTokens * SCALE) / maxTokenHolder;
+        // check if it is returing correct Di/Dmax
+        // also write gas this function used
     }
 
     function _updateUserActivity(address user) private {
@@ -234,6 +250,9 @@ contract Fadra is ERC20 {
         }
         userActivities[user].transactionCount++;
         userActivities[user].lastTransactionTimestamp = block.timestamp;
+        // for the first transaction if unique user is increasing or not,
+        // then check if it is properly increasing transactionCount and lastTransactionTimestamp
+        // also write gas this function used
     }
 
     function _updateMaxTokenHolder(address user) private {
@@ -242,6 +261,8 @@ contract Fadra is ERC20 {
         if (userHolding > maxTokenHolder) {
             maxTokenHolder = userHolding;
         }
+        // check if it is correctly handling the maxToken holder
+        // also write gas this function used
     }
 
     function updateUserContribution(address user) private {
