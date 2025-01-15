@@ -10,7 +10,7 @@ contract Fadra is ERC20 {
     uint256 private constant SECONDS_IN_THREE_MONTHS = 7776000;
     uint256 private constant SCALE = 1e18; // Minimum value with added precision
 
-    uint256 TotalcalculatedReward; // needed for shortfall
+    // uint256 TotalcalculatedReward; // needed for shortfall
 
     uint256 public totalRewardPool; // Tracks reward pool balance
     uint256 public maxTokenHolder = 0; // Maximum tokens held by a single user
@@ -95,16 +95,7 @@ contract Fadra is ERC20 {
                 IERC20(rewardToken).transfer(msg.sender, reward),
                 "Reward transfer failed"
             );
-        } else {
-            //shortfall : if the reward of user is not in the reward pool.
-            //    uint256 RevisedReward = reward * (totalRewardPool/TotalcalculatedReward);
-            //    require(
-            //             IERC20(rewardToken).transfer(msg.sender, RevisedReward),
-            //             "Reward transfer failed"
-            //         );
-            //wrapped the above logic in this function
-            shortfall(reward, msg.sender);
-        }
+        } 
 
         _updateUserActivity(msg.sender);
         _updateMaxTokenHolder(msg.sender);
@@ -159,16 +150,6 @@ contract Fadra is ERC20 {
                 IERC20(rewardToken).transfer(from, reward),
                 "Reward transfer failed"
             );
-        } else {
-            //shortfall : if the reward of user is not in the reward pool.
-            //    uint256 RevisedReward = reward * (balanceOf(this)/TotalcalculatedReward); //idk how to check the value available in the contract [i tried]
-            //    require(
-            //             IERC20(rewardToken).transfer(from, RevisedReward),
-            //             "Reward transfer failed"
-            //         );
-
-            // wrapped the above logic in this function
-            shortfall(reward, from);
         }
         _updateUserActivity(from);
         _updateUserActivity(to);
