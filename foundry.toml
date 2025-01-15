@@ -4,5 +4,11 @@ out = "out"
 libs = ["lib"]
 remappings = ['@openzeppelin=lib/openzeppelin-contracts']
 
+fs_permissions = [{ access = "read", path = "./broadcast" }]
+dry_run = false
+
+[rpc_endpoints]
+arbitrum = "https://arb-sepolia.g.alchemy.com"
+
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
