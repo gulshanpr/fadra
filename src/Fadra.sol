@@ -56,8 +56,8 @@ contract Fadra is ERC20 {
         _mint(owner, maxSupply);
     }
 
-    // minting function [transactions]
-    // gotta remove the logic in mint function
+
+  
     function mint(uint256 amount) public {
         uint256 amountWithDecimals = amount * 10 ** 18;
         require(
@@ -107,13 +107,16 @@ contract Fadra is ERC20 {
 
         super._transfer(from, to, afterFeeAmount);
 
-        uint256 reward = RewardCalc(from);
-        TotalcalculatedReward = TotalcalculatedReward + reward;
+        // after transaction calculate reward for that transaction
+        uint256 _reward = RewardCalc(from);
+        // add the calculated reward to it's struct reward member
+        userActivities[from].reward = _reward + userActivities[from].reward;
+        // then run checks for reward transfer
         // 100 is just a placeholder value here
         // make another check in the if block i.e whether the reward is available in the pool or not ****imp****
-        if ((reward > 100) && (balanceOf(address(this)) > 100)) {
+        if ((userActivities[from].reward > 100) && (balanceOf(address(this)) > 100)) {
             require(
-                IERC20(rewardToken).transfer(from, reward),
+                IERC20(rewardToken).transfer(from, userActivities[from].reward),
                 "Reward transfer failed"
             );
         }
