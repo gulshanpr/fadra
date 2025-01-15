@@ -6,9 +6,9 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Fadra is ERC20 {
     uint256 public immutable maxSupply = 6_942_000_000 * 10 ** 18; // no need to hard code, we will get this value upon deployment
-    uint256 private constant SECONDS_PER_YEAR = 31536000;
-    uint256 private constant SECONDS_IN_THREE_MONTHS = 7776000;
-    uint256 private constant SCALE = 1e18; // Minimum value with added precision
+    uint256 public constant SECONDS_PER_YEAR = 31536000;
+    uint256 public constant SECONDS_IN_THREE_MONTHS = 7776000;
+    uint256 public constant SCALE = 1e18; // Minimum value with added precision
 
     uint256 TotalcalculatedReward; // needed for shortfall
 
@@ -17,8 +17,8 @@ contract Fadra is ERC20 {
     uint256 public contractTimestamp;
 
     address public rewardToken;
-    address private lpWallet;
-    address private marketingWallet;
+    address public lpWallet;
+    address public marketingWallet;
     address public owner;
 
     mapping(address => uint256) public userContribution; // Tracks user contributions
@@ -35,12 +35,12 @@ contract Fadra is ERC20 {
     uint256 public totalUsers; // Tracks total unique users
     mapping(address => UserActivity) public userActivities; // Tracks activity per user
 
-    uint256 private constant BASE_BETA_MIN = 2e16; // Example: 0.02 * 1e18
-    uint256 private constant BASE_BETA_MAX = 15e16; // Example: 0.15 * 1e18
-    uint256 private constant BASE_ALPHA_MIN = 1e16; // Example: 0.01 * 1e18
-    uint256 private constant BASE_ALPHA_MAX = 1e17; // Example: 0.1 * 1e18
-    uint256 private constant TARGET_REWARD_POOL = 1200 * 1e18; // Example target
-    uint256 private constant TARGET_ACTIVITY = 600; // Example activity target
+    uint256 public constant BASE_BETA_MIN = 2e16; // Example: 0.02 * 1e18
+    uint256 public constant BASE_BETA_MAX = 15e16; // Example: 0.15 * 1e18
+    uint256 public constant BASE_ALPHA_MIN = 1e16; // Example: 0.01 * 1e18
+    uint256 public constant BASE_ALPHA_MAX = 1e17; // Example: 0.1 * 1e18
+    uint256 public constant TARGET_REWARD_POOL = 1200 * 1e18; // Example target
+    uint256 public constant TARGET_ACTIVITY = 600; // Example activity target
 
     constructor(
         string memory name,
@@ -85,10 +85,10 @@ contract Fadra is ERC20 {
 
         uint256 totalFee = LPfee + RPfee + marketingFee;
 
-        require(
-            IERC20(rewardToken).allowance(from, address(this)) >= totalFee,
-            "Insufficient allowance for fees"
-        );
+        // require(
+        //     IERC20(rewardToken).allowance(from, address(this)) >= totalFee,
+        //     "Insufficient allowance for fees"
+        // );
 
         require(
             IERC20(rewardToken).transferFrom(from, address(this), totalFee),
@@ -132,7 +132,7 @@ contract Fadra is ERC20 {
     function _calculateFees(
         uint256 amount
     )
-        private
+        public
         pure
         returns (
             uint256 LPfee,
@@ -176,7 +176,7 @@ contract Fadra is ERC20 {
 
     // in test check if some values are zero or doesn't exists what will happen (remove this afer test)
 
-    function betai(address user) private view returns (uint256) {
+    function betai(address user) public view returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 tokenDistributionMultiplier = 1 - getTokenDistribution(user);
         uint256 betaMin = (BASE_BETA_MIN * totalRewardPool) /
@@ -187,7 +187,7 @@ contract Fadra is ERC20 {
         // check if we are getting values for all functions
     }
 
-    function alphai(address user) private view returns (uint256) {
+    function alphai(address user) public view returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 tokenDistributionMultiplier = getTokenDistribution(user);
         uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
@@ -199,7 +199,7 @@ contract Fadra is ERC20 {
         // check if we are getting values for all functions
     }
 
-    function Hholding(address user) private view returns (uint256) {
+    function Hholding(address user) public view returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 lastTx = userActivities[user].lastTransactionTimestamp;
         uint256 timeDiff = block.timestamp - lastTx;
@@ -209,7 +209,7 @@ contract Fadra is ERC20 {
         // check if activity if greater than scale and not greater then scale
     }
 
-    function Sactivity(address user) private view returns (uint256) {
+    function Sactivity(address user) public view returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 userTxCount = userActivities[user].transactionCount;
         uint256 averageTx = totalTransactions / totalUsers;
@@ -217,7 +217,7 @@ contract Fadra is ERC20 {
         // check if all values are fetching from struct or not
     }
 
-    function fallBack() private returns (bool) {
+    function fallBack() public returns (bool) {
         bool isThreeMonthPassed = ((block.timestamp - contractTimestamp) >=
             SECONDS_IN_THREE_MONTHS);
         if (isThreeMonthPassed && totalTransactions <= 1000) {
@@ -238,7 +238,7 @@ contract Fadra is ERC20 {
         }
     }
 
-    function getTokenDistribution(address user) private view returns (uint256) {
+    function getTokenDistribution(address user) public view returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 userTokens = balanceOf(user);
         return (userTokens * SCALE) / maxTokenHolder;
@@ -246,7 +246,7 @@ contract Fadra is ERC20 {
         // also write gas this function used
     }
 
-    function _updateUserActivity(address user) private {
+    function _updateUserActivity(address user) public {
         require(user != address(0), "Sender address cannot be zero");
         if (userActivities[user].transactionCount == 0) {
             totalUsers++;
@@ -258,7 +258,7 @@ contract Fadra is ERC20 {
         // also write gas this function used
     }
 
-    function _updateMaxTokenHolder(address user) private {
+    function _updateMaxTokenHolder(address user) public {
         require(user != address(0), "Sender address cannot be zero");
         uint256 userHolding = balanceOf(user);
         if (userHolding > maxTokenHolder) {
@@ -268,7 +268,7 @@ contract Fadra is ERC20 {
         // also write gas this function used
     }
 
-    function updateUserContribution(address user) private {
+    function updateUserContribution(address user) public {
         require(user != address(0), "Sender address cannot be zero");
         globalSummation -= userContribution[user];
         uint256 newContribution = balanceOf(user) *
@@ -280,14 +280,14 @@ contract Fadra is ERC20 {
     }
 
     //shortfall function
-    function shortfall(uint256 _reward, address rewardGainer) private {
-        uint256 RevisedReward = _reward *
-            (totalRewardPool / TotalcalculatedReward);
-        require(
-            IERC20(rewardToken).transfer(rewardGainer, RevisedReward),
-            "Reward transfer failed"
-        );
-    }
+    // function shortfall(uint256 _reward, address rewardGainer) private {
+    //     uint256 RevisedReward = _reward *
+    //         (totalRewardPool / TotalcalculatedReward);
+    //     require(
+    //         IERC20(rewardToken).transfer(rewardGainer, RevisedReward),
+    //         "Reward transfer failed"
+    //     );
+    // }
 
     function min(uint256 a, uint256 b) private pure returns (uint256) {
         return a < b ? a : b;
