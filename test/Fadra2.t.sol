@@ -116,6 +116,36 @@ contract FadraTest is Test {
         console.log("Sactivity returned value ", fadra.Sactivity(msg.sender));
     }
 
+    function testUpdateUserActivity() public {
+        vm.warp(1737013266);
+        fadra._updateUserActivity(msg.sender);
+        vm.warp(1737013269);
+        fadra._updateUserActivity(msg.sender);
+        (uint256 balanc, uint256 transactionCount, uint256 lastTransactionTimestamp, uint reward) = fadra.getUserActivity(msg.sender);
+
+        console.log("balance", balanc);
+        console.log("transactionCount", transactionCount);
+        console.log("lastTransactionTimestamp", lastTransactionTimestamp);
+        console.log("reward", reward);
+    }
+
+    function testUpdateMaxTokenHolder() public {
+        // console.log(msg.sender)
+        // console.log("Owner address set in Fadra contract:", fadra.owner());
+        // console.log(
+        //     "Balance of deployer after deploying Fadra:",
+        //     fadra.balanceOf(deployer)
+        // );
+        // fadra.setMaxTokenHolder()
+        fadra._updateMaxTokenHolder(msg.sender);
+        console.log("max token ", fadra.getMaxTokenHolder());
+        console.log(msg.sender);
+    }
+
+    function testUpdateUserContribution() public {
+
+    }
+
     // function testRewardCalc() public {
     //     console.log("betai starts--------------------------------");
     //     fadra.setMaxTokenHolder(1000);
