@@ -5,7 +5,6 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Fadra is ERC20 {
-
     // I had to make everything public because of the test.
     uint256 public immutable maxSupply = 6_942_000_000 * 10 ** 18; // no need to hard code, we will get this value upon deployment
     uint256 public constant SECONDS_PER_YEAR = 31536000;
@@ -58,8 +57,6 @@ contract Fadra is ERC20 {
         _mint(owner, maxSupply);
     }
 
-
-  
     function mint(uint256 amount) public {
         uint256 amountWithDecimals = amount * 10 ** 18;
         require(
@@ -77,17 +74,7 @@ contract Fadra is ERC20 {
     ) internal override {
         require(from != address(0), "Sender address cannot be zero");
         require(to != address(0), "Recipient address cannot be zero");
-        require(amount > 0, "Transfer amount must be greater than zero------");
-
-             if (from == owner) {
-            super._transfer(from, to, amount);
-            _updateMaxTokenHolder(to);
-            _updateUserActivity(to);
-            return;
-          }
-
-          
-
+        require(amount > 0, "Transfer amount must be greater than zero");
         (
             uint256 LPfee,
             uint256 RPfee,
@@ -95,74 +82,51 @@ contract Fadra is ERC20 {
             uint256 afterFeeAmount
         ) = _calculateFees(amount);
 
-         super._transfer(from, to, afterFeeAmount);
-
         uint256 totalFee = LPfee + RPfee + marketingFee;
 
-        require(afterFeeAmount > 0, "Transfer amount must be greater than zero");
-
-    //      if (IERC20(rewardToken).allowance(from, address(this)) < totalFee) {
-    //     _approve(from, address(this), type(uint256).max);
-    // }
-
-        require(
-            IERC20(rewardToken).allowance(from, address(this)) >= totalFee,
-            "Insufficient allowance for fees"
-        );
+        // require(
+        //     IERC20(rewardToken).allowance(from, address(this)) >= totalFee,
+        //     "Insufficient allowance for fees"
+        // );
 
         require(
-            TransFee(from, address(this), RPfee),
+            IERC20(rewardToken).transferFrom(from, address(this), totalFee),
             "Transfer failed"
         );
 
+        require( TransFee(from, address(this), RPfee), "Transfer failed");
+
         totalRewardPool += RPfee;
         require(
-             TransFee(from,lpWallet, LPfee),
+            IERC20(rewardToken).transfer(lpWallet, LPfee),
             "Transfer to LP wallet failed"
         );
         require(
-            TransFee(from,marketingWallet, marketingFee),
+            IERC20(rewardToken).transfer(marketingWallet, marketingFee),
             "Transfer to Marketing wallet failed"
         );
 
-         _updateUserActivity(from);
-       // _updateUserActivity(to);
-        _updateMaxTokenHolder(from);
-        _updateMaxTokenHolder(to);
-        updateUserContribution(from);
-        
-
+        super._transfer(from, to, afterFeeAmount);
 
         // after transaction calculate reward for that transaction
-
-       uint256 _reward = RewardCalc(from);
-
+        uint256 _reward = RewardCalc(from);
         // add the calculated reward to it's struct reward member
-
         userActivities[from].reward = _reward + userActivities[from].reward;
-
         // then run checks for reward transfer
         // 100 is just a placeholder value here
         // make another check in the if block i.e whether the reward is available in the pool or not ****imp****
-
         if ((userActivities[from].reward > 100) && (balanceOf(address(this)) > 100)) {
             require(
                 IERC20(rewardToken).transfer(from, userActivities[from].reward),
                 "Reward transfer failed"
             );
         }
-
-        // _updateUserActivity(from);
-        // _updateUserActivity(to);
+        _updateUserActivity(from);
+        _updateUserActivity(to);
         _updateMaxTokenHolder(from);
         _updateMaxTokenHolder(to);
         // check if one does transfer is this updating all states and is this transferring value to address or not?
         // also check for the allowance and 100 reward token limit, only transfer reward if 100 token is accumulate
-    }
-
-    function TransFee(address from, address to, uint256 amount) public returns (bool) {
-         super._transfer(from, to, amount);
-         return true;
     }
 
     //fee calculator
@@ -185,12 +149,12 @@ contract Fadra is ERC20 {
         afterFeeAmount = amount - (LPfee + RPfee + marketingFee);
 
         return (LPfee, RPfee, marketingFee, afterFeeAmount);
-        // is this calculating values correctly?
     }
 
     //reward calculator
     function RewardCalc(address _user) public returns (uint256) {
-        uint256 Tokens = balanceOf(_user);
+        // uint256 Tokens = balanceOf(_user); uncomment this line after test IMPORTANT
+        uint256 Tokens = 2000 * 1e18;
         uint256 Beta = betai(_user);
         uint256 Alpha = alphai(_user);
         uint256 Sact = Sactivity(_user);
@@ -200,8 +164,8 @@ contract Fadra is ERC20 {
         uint256 denominator = globalSummation * 1e18;
 
         uint256 reward = max(
-            (15 * (totalRewardPool * 1e18)) / 100,
-            min((999 * (totalRewardPool * 1e18)) / 1000, numerator / denominator)
+            (15 * totalRewardPool) / 100,
+            min((999 * totalRewardPool) / 1000, numerator / denominator)
         );
 
         fallBack();
@@ -218,7 +182,7 @@ contract Fadra is ERC20 {
         uint256 tokenDistributionMultiplier = 1e18 - getTokenDistribution(user);
         uint256 betaMin = (BASE_BETA_MIN * (totalRewardPool * 1e18)) /
             TARGET_REWARD_POOL;
-        uint256 betaMax = (BASE_BETA_MAX * (totalRewardPool* 1e18)) /
+        uint256 betaMax = (BASE_BETA_MAX * totalRewardPool) /
             TARGET_REWARD_POOL;
         return betaMin + (betaMax - betaMin) * tokenDistributionMultiplier;
         // check if we are getting values for all functions
@@ -230,7 +194,7 @@ contract Fadra is ERC20 {
         uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
             (totalTransactions * 1e18);
         uint256 alphaMax = (BASE_ALPHA_MAX * TARGET_ACTIVITY) /
-           ( totalTransactions * 1e18);
+            totalTransactions;
 
         return alphaMin + (alphaMax - alphaMin) * tokenDistributionMultiplier;
         // check if we are getting values for all functions
@@ -278,11 +242,6 @@ contract Fadra is ERC20 {
     function getTokenDistribution(address user) public view returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 userTokens = balanceOf(user);
-        uint256 TokenDistribution = (userTokens * SCALE) / maxTokenHolder;
-        require (
-            TokenDistribution <= 1e18,
-            "very large value"        
-            );
         return (userTokens * SCALE) / maxTokenHolder;
         // check if it is returing correct Di/Dmax
         // also write gas this function used
@@ -313,8 +272,6 @@ contract Fadra is ERC20 {
 
     function updateUserContribution(address user) public {
         require(user != address(0), "Sender address cannot be zero");
-
-        if(globalSummation != 0){
         globalSummation -= userContribution[user];
         uint256 newContribution = balanceOf(user) *
             (1 + betai(user) - alphai(user)) *
@@ -322,23 +279,23 @@ contract Fadra is ERC20 {
             Sactivity(user);
         userContribution[user] = newContribution;
         globalSummation += newContribution;
-        } else {
-            uint256 newContribution = balanceOf(user) *
-            (1 + betai(user) - alphai(user)) *
-            (1 + Hholding(user)) *
-            Sactivity(user);
-        userContribution[user] = newContribution;
-        globalSummation += newContribution;
-        }
-   
     }
 
-    function min(uint256 a, uint256 b) private pure returns (uint256) {
+    //shortfall function
+    // function shortfall(uint256 _reward, address rewardGainer) private {
+    //     uint256 RevisedReward = _reward *
+    //         (totalRewardPool / TotalcalculatedReward);
+    //     require(
+    //         IERC20(rewardToken).transfer(rewardGainer, RevisedReward),
+    //         "Reward transfer failed"
+    //     );
+    // }
+
+    function min(uint256 a, uint256 b) public pure returns (uint256) {
         return a < b ? a : b;
     }
 
-    function max(uint256 a, uint256 b) private pure returns (uint256) {
+    function max(uint256 a, uint256 b) public pure returns (uint256) {
         return a > b ? a : b;
     }
-
 }
