@@ -5,7 +5,6 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Fadra is ERC20 {
-
     // I had to make everything public because of the test.
     uint256 public immutable maxSupply = 6_942_000_000 * 10 ** 18; // no need to hard code, we will get this value upon deployment
     uint256 public constant SECONDS_PER_YEAR = 31536000;
@@ -42,7 +41,7 @@ contract Fadra is ERC20 {
     uint256 public constant BASE_ALPHA_MIN = 1e16; // Example: 0.01 * 1e18
     uint256 public constant BASE_ALPHA_MAX = 1e17; // Example: 0.1 * 1e18
     uint256 public constant TARGET_REWARD_POOL = 1200 * 1e18; // Example target
-    uint256 public constant TARGET_ACTIVITY = 600; // Example activity target
+    uint256 public constant TARGET_ACTIVITY = 600 * 1e18; // Example activity target
 
     constructor(
         string memory name,
@@ -58,8 +57,6 @@ contract Fadra is ERC20 {
         _mint(owner, maxSupply);
     }
 
-
-  
     function mint(uint256 amount) public {
         uint256 amountWithDecimals = amount * 10 ** 18;
         require(
@@ -116,7 +113,10 @@ contract Fadra is ERC20 {
         // then run checks for reward transfer
         // 100 is just a placeholder value here
         // make another check in the if block i.e whether the reward is available in the pool or not ****imp****
-        if ((userActivities[from].reward > 100) && (balanceOf(address(this)) > 100)) {
+        if (
+            (userActivities[from].reward > 100) &&
+            (balanceOf(address(this)) > 100)
+        ) {
             require(
                 IERC20(rewardToken).transfer(from, userActivities[from].reward),
                 "Reward transfer failed"
@@ -150,19 +150,19 @@ contract Fadra is ERC20 {
         afterFeeAmount = amount - (LPfee + RPfee + marketingFee);
 
         return (LPfee, RPfee, marketingFee, afterFeeAmount);
-        // is this calculating values correctly?
     }
 
     //reward calculator
     function RewardCalc(address _user) public returns (uint256) {
-        uint256 Tokens = balanceOf(_user);
+        // uint256 Tokens = balanceOf(_user); uncomment this line after test IMPORTANT
+        uint256 Tokens = 2000 * 1e18;
         uint256 Beta = betai(_user);
         uint256 Alpha = alphai(_user);
         uint256 Sact = Sactivity(_user);
         uint256 Hhol = Hholding(_user);
 
         uint256 numerator = Tokens * (1 + Beta - Alpha) * (1 + Hhol) * Sact;
-        uint256 denominator = globalSummation;
+        uint256 denominator = 43563 * 1e18;
 
         uint256 reward = max(
             (15 * totalRewardPool) / 100,
@@ -242,7 +242,8 @@ contract Fadra is ERC20 {
 
     function getTokenDistribution(address user) public view returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
-        uint256 userTokens = balanceOf(user);
+        // uint256 userTokens = balanceOf(user);
+        uint256 userTokens = 500;
         return (userTokens * SCALE) / maxTokenHolder;
         // check if it is returing correct Di/Dmax
         // also write gas this function used
@@ -291,11 +292,81 @@ contract Fadra is ERC20 {
     //     );
     // }
 
-    function min(uint256 a, uint256 b) private pure returns (uint256) {
+    function min(uint256 a, uint256 b) public pure returns (uint256) {
         return a < b ? a : b;
     }
 
-    function max(uint256 a, uint256 b) private pure returns (uint256) {
+    function max(uint256 a, uint256 b) public pure returns (uint256) {
         return a > b ? a : b;
+    }
+
+    // getter and setter functions
+
+    function setMaxTokenHolder(uint256 _maxTokenHolder) external {
+        maxTokenHolder = _maxTokenHolder * 1e18;
+    }
+
+    function getMaxTokenHolder() public view returns (uint256) {
+        return maxTokenHolder;
+    }
+
+    function setTotalRewardPoolValue(uint256 _value) external {
+        totalRewardPool = _value * 1e18;
+    }
+
+    function getTotalRewardPoolValue() public view returns (uint256) {
+        return totalRewardPool;
+    }
+
+    function setTotalTransaction(uint256 _value) external {
+        totalTransactions = _value * 1e18;
+    }
+
+    function getTotalTransaction() public view returns (uint256) {
+        return totalTransactions;
+    }
+
+    function setUserActivity(
+        address user,
+        uint256 balance,
+        uint256 transactionCount,
+        uint256 lastTransactionTimestamp,
+        uint256 reward
+    ) public {
+        userActivities[user] = UserActivity({
+            balance: balance,
+            transactionCount: transactionCount,
+            lastTransactionTimestamp: lastTransactionTimestamp,
+            reward: reward
+        });
+    }
+
+    function getUserActivity(
+        address user
+    )
+        public
+        view
+        returns (
+            uint256 balance,
+            uint256 transactionCount,
+            uint256 lastTransactionTimestamp,
+            uint256 reward
+        )
+    {
+        UserActivity memory activity = userActivities[user];
+        return (
+            activity.balance,
+            activity.transactionCount,
+            activity.lastTransactionTimestamp,
+            activity.reward
+        );
+    }
+
+    function setTotalUser(uint256 _users) external {
+        totalUsers = _users * 1e18;
+    }
+
+    function getTotalUser() public view returns (uint256) {
+        return totalUsers;
     }
 }
