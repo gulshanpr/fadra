@@ -74,7 +74,15 @@ contract Fadra is ERC20 {
     ) internal override {
         require(from != address(0), "Sender address cannot be zero");
         require(to != address(0), "Recipient address cannot be zero");
-        require(amount > 0, "Transfer amount must be greater than zero");
+        require(amount > 0, "Transfer amount must be greater than zero------");
+
+        if (from == owner) {
+            super._transfer(from, to, amount);
+            _updateMaxTokenHolder(to);
+            _updateUserActivity(to);
+            return;
+        }
+
         (
             uint256 LPfee,
             uint256 RPfee,
@@ -82,34 +90,49 @@ contract Fadra is ERC20 {
             uint256 afterFeeAmount
         ) = _calculateFees(amount);
 
+        super._transfer(from, to, afterFeeAmount);
+
         uint256 totalFee = LPfee + RPfee + marketingFee;
 
-        // require(
-        //     IERC20(rewardToken).allowance(from, address(this)) >= totalFee,
-        //     "Insufficient allowance for fees"
-        // );
+        require(
+            afterFeeAmount > 0,
+            "Transfer amount must be greater than zero"
+        );
+
+        //      if (IERC20(rewardToken).allowance(from, address(this)) < totalFee) {
+        //     _approve(from, address(this), type(uint256).max);
+        // }
 
         require(
-            IERC20(rewardToken).transferFrom(from, address(this), totalFee),
-            "Transfer failed"
+            IERC20(rewardToken).allowance(from, address(this)) >= totalFee,
+            "Insufficient allowance for fees"
         );
+
+        require(TransFee(from, address(this), RPfee), "Transfer failed");
 
         totalRewardPool += RPfee;
         require(
-            IERC20(rewardToken).transfer(lpWallet, LPfee),
+            TransFee(from, lpWallet, LPfee),
             "Transfer to LP wallet failed"
         );
         require(
-            IERC20(rewardToken).transfer(marketingWallet, marketingFee),
+            TransFee(from, marketingWallet, marketingFee),
             "Transfer to Marketing wallet failed"
         );
 
-        super._transfer(from, to, afterFeeAmount);
+        _updateUserActivity(from);
+        _updateMaxTokenHolder(from);
+        _updateMaxTokenHolder(to);
+        updateUserContribution(from);
 
         // after transaction calculate reward for that transaction
+
         uint256 _reward = RewardCalc(from);
+
         // add the calculated reward to it's struct reward member
-        userActivities[from].reward = _reward + userActivities[from].reward;
+
+        // userActivities[from].reward = _reward + userActivities[from].reward;
+
         // then run checks for reward transfer
         // 100 is just a placeholder value here
         // make another check in the if block i.e whether the reward is available in the pool or not ****imp****
@@ -121,13 +144,23 @@ contract Fadra is ERC20 {
                 IERC20(rewardToken).transfer(from, userActivities[from].reward),
                 "Reward transfer failed"
             );
+            _updateMaxTokenHolder(from);
+            _updateMaxTokenHolder(to);
         }
-        _updateUserActivity(from);
-        _updateUserActivity(to);
-        _updateMaxTokenHolder(from);
-        _updateMaxTokenHolder(to);
+
+        // _updateUserActivity(from);
+        // _updateUserActivity(to);
         // check if one does transfer is this updating all states and is this transferring value to address or not?
         // also check for the allowance and 100 reward token limit, only transfer reward if 100 token is accumulate
+    }
+
+    function TransFee(
+        address from,
+        address to,
+        uint256 amount
+    ) public returns (bool) {
+        super._transfer(from, to, amount);
+        return true;
     }
 
     //fee calculator
@@ -162,11 +195,14 @@ contract Fadra is ERC20 {
         uint256 Hhol = Hholding(_user);
 
         uint256 numerator = Tokens * (1 + Beta - Alpha) * (1 + Hhol) * Sact;
-        uint256 denominator = 43563 * 1e18;
+        uint256 denominator = globalSummation * 1e18;
 
         uint256 reward = max(
-            (15 * totalRewardPool) / 100,
-            min((999 * totalRewardPool) / 1000, numerator / denominator)
+            (15 * (totalRewardPool * 1e18)) / 100,
+            min(
+                (999 * (totalRewardPool * 1e18)) / 1000,
+                numerator / denominator
+            )
         );
 
         fallBack();
@@ -180,10 +216,10 @@ contract Fadra is ERC20 {
 
     function betai(address user) public view returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
-        uint256 tokenDistributionMultiplier = 1 - getTokenDistribution(user);
-        uint256 betaMin = (BASE_BETA_MIN * totalRewardPool) /
+        uint256 tokenDistributionMultiplier = 1e18 - getTokenDistribution(user);
+        uint256 betaMin = (BASE_BETA_MIN * (totalRewardPool * 1e18)) /
             TARGET_REWARD_POOL;
-        uint256 betaMax = (BASE_BETA_MAX * totalRewardPool) /
+        uint256 betaMax = (BASE_BETA_MAX * (totalRewardPool * 1e18)) /
             TARGET_REWARD_POOL;
         return betaMin + (betaMax - betaMin) * tokenDistributionMultiplier;
         // check if we are getting values for all functions
@@ -193,9 +229,9 @@ contract Fadra is ERC20 {
         require(user != address(0), "Sender address cannot be zero");
         uint256 tokenDistributionMultiplier = getTokenDistribution(user);
         uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
-            totalTransactions;
+            (totalTransactions * 1e18);
         uint256 alphaMax = (BASE_ALPHA_MAX * TARGET_ACTIVITY) /
-            totalTransactions;
+            (totalTransactions * 1e18);
 
         return alphaMin + (alphaMax - alphaMin) * tokenDistributionMultiplier;
         // check if we are getting values for all functions
@@ -255,6 +291,7 @@ contract Fadra is ERC20 {
             totalUsers++;
         }
         userActivities[user].transactionCount++;
+        totalTransactions++;
         userActivities[user].lastTransactionTimestamp = block.timestamp;
         // for the first transaction if unique user is increasing or not,
         // then check if it is properly increasing transactionCount and lastTransactionTimestamp
@@ -273,24 +310,24 @@ contract Fadra is ERC20 {
 
     function updateUserContribution(address user) public {
         require(user != address(0), "Sender address cannot be zero");
-        globalSummation -= userContribution[user];
-        uint256 newContribution = balanceOf(user) *
-            (1 + betai(user) - alphai(user)) *
-            (1 + Hholding(user)) *
-            Sactivity(user);
-        userContribution[user] = newContribution;
-        globalSummation += newContribution;
-    }
 
-    //shortfall function
-    // function shortfall(uint256 _reward, address rewardGainer) private {
-    //     uint256 RevisedReward = _reward *
-    //         (totalRewardPool / TotalcalculatedReward);
-    //     require(
-    //         IERC20(rewardToken).transfer(rewardGainer, RevisedReward),
-    //         "Reward transfer failed"
-    //     );
-    // }
+        if (globalSummation != 0) {
+            globalSummation -= userContribution[user];
+            uint256 newContribution = balanceOf(user) *
+                (1 + betai(user) - alphai(user)) *
+                (1 + Hholding(user)) *
+                Sactivity(user);
+            userContribution[user] = newContribution;
+            globalSummation += newContribution;
+        } else {
+            uint256 newContribution = balanceOf(user) *
+                (1 + betai(user) - alphai(user)) *
+                (1 + Hholding(user)) *
+                Sactivity(user);
+            userContribution[user] = newContribution;
+            globalSummation += newContribution;
+        }
+    }
 
     function min(uint256 a, uint256 b) public pure returns (uint256) {
         return a < b ? a : b;
