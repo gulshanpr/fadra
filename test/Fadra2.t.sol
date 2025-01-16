@@ -117,67 +117,54 @@ contract FadraTest is Test {
     }
 
     function testUpdateUserActivity() public {
+        fadra.setUserActivity(msg.sender, 23443, 34, 1737013245, 1000);
+        fadra.setTotalTransaction(12345);
         vm.warp(1737013266);
+        console.log(block.timestamp);
         fadra._updateUserActivity(msg.sender);
         vm.warp(1737013269);
+        console.log(block.timestamp);
         fadra._updateUserActivity(msg.sender);
-        (uint256 balanc, uint256 transactionCount, uint256 lastTransactionTimestamp, uint reward) = fadra.getUserActivity(msg.sender);
+        (
+            uint256 balanc,
+            uint256 transactionCount,
+            uint256 lastTransactionTimestamp,
+            uint reward
+        ) = fadra.getUserActivity(msg.sender);
 
         console.log("balance", balanc);
         console.log("transactionCount", transactionCount);
         console.log("lastTransactionTimestamp", lastTransactionTimestamp);
         console.log("reward", reward);
+        console.log("total transaction count", fadra.getTotalTransaction());
     }
 
     function testUpdateMaxTokenHolder() public {
-        // console.log(msg.sender)
-        // console.log("Owner address set in Fadra contract:", fadra.owner());
-        // console.log(
-        //     "Balance of deployer after deploying Fadra:",
-        //     fadra.balanceOf(deployer)
-        // );
-        // fadra.setMaxTokenHolder()
-        fadra._updateMaxTokenHolder(msg.sender);
-        console.log("max token ", fadra.getMaxTokenHolder());
-        console.log(msg.sender);
+        address deployer = makeAddr("deployer");
+
+        vm.startPrank(deployer);
+
+        console.log(
+            "Max token holder after setting baseline:",
+            fadra.getMaxTokenHolder()
+        );
+        fadra.setMaxTokenHolder(99999999);
+        console.log(
+            "Max token holder after setting baseline:",
+            fadra.getMaxTokenHolder()
+        );
+        fadra._updateMaxTokenHolder(deployer);
+        console.log(
+            "Max token holder after setting baseline: after updating",
+            fadra.getMaxTokenHolder()
+        );
+
+        vm.stopPrank();
     }
 
-    function testUpdateUserContribution() public {
-
+    function testFailMint() public {
+        fadra.mint(20);
+        // this test is failing means test is passing
     }
 
-    // function testRewardCalc() public {
-    //     console.log("betai starts--------------------------------");
-    //     fadra.setMaxTokenHolder(1000);
-    //     console.log("setted maxTokenHolder Value: ", fadra.getMaxTokenHolder());
-    //     fadra.setTotalRewardPoolValue(2000);
-    //     console.log(
-    //         "setted totalRewardPool value: ",
-    //         fadra.getTotalRewardPoolValue()
-    //     );
-    //     console.log(fadra.betai(msg.sender));
-    //     console.log("betai ends----------------------------------");
-    //     console.log("alphai starts----------------------------------");
-    //     fadra.setTotalTransaction(800);
-    //     console.log(
-    //         "setted totalTransaction value: ",
-    //         fadra.getTotalTransaction()
-    //     );
-    //     console.log(fadra.alphai(msg.sender));
-    //     console.log("alphai ends----------------------------------");
-    //     console.log("Hholding starts----------------------------------");
-    //     vm.warp(1737013266);
-    //     // console.log("timestamp", block.timestamp);
-    //     fadra.setUserActivity(msg.sender, 1000, 100, 1736408466, 92);
-    //     console.log("Hholding returned value ", fadra.Hholding(msg.sender));
-    //     console.log("Hholding ends----------------------------------");
-    //     console.log("Sactivity ends----------------------------------");
-    //     fadra.setTotalUser(50);
-    //     console.log("setted totalUsers value is", fadra.getTotalUser());
-
-    //     console.log("Sactivity returned value ", fadra.Sactivity(msg.sender));
-    //     console.log("Sactivity ends----------------------------------");
-
-    //     console.log("reward calc ", fadra.RewardCalc(msg.sender));
-    // }
 }

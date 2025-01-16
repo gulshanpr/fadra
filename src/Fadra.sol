@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Fadra is ERC20 {
     // I had to make everything public because of the test.
-    uint256 public immutable maxSupply = 6_942_000_000 * 10 ** 18; // no need to hard code, we will get this value upon deployment
+    uint256 public immutable maxSupply = 6_942_000_000 * 1e18; // no need to hard code, we will get this value upon deployment
     uint256 public constant SECONDS_PER_YEAR = 31536000;
     uint256 public constant SECONDS_IN_THREE_MONTHS = 7776000;
     uint256 public constant SCALE = 1e18; // Minimum value with added precision
@@ -90,19 +90,16 @@ contract Fadra is ERC20 {
             uint256 afterFeeAmount
         ) = _calculateFees(amount);
 
-        super._transfer(from, to, afterFeeAmount);
-
-        uint256 totalFee = LPfee + RPfee + marketingFee;
-
         require(
             afterFeeAmount > 0,
             "Transfer amount must be greater than zero"
         );
 
-        //      if (IERC20(rewardToken).allowance(from, address(this)) < totalFee) {
-        //     _approve(from, address(this), type(uint256).max);
-        // }
+        super._transfer(from, to, afterFeeAmount);
 
+        uint256 totalFee = LPfee + RPfee + marketingFee;
+
+        // allowance is confirmed from frontend
         require(
             IERC20(rewardToken).allowance(from, address(this)) >= totalFee,
             "Insufficient allowance for fees"
