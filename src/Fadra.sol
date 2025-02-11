@@ -212,7 +212,8 @@ contract Fadra is ERC20 {
 
     // in test check if some values are zero or doesn't exists what will happen (remove this afer test)
 
-    function betai(address user) public view returns (uint256) {
+    // and view plssssssssssss (i have remove it for testing purposes)
+    function betai(address user) public returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 tokenDistributionMultiplier = 1e18 - getTokenDistribution(user);
         uint256 betaMin = (BASE_BETA_MIN * (totalRewardPool * 1e18)) /
@@ -223,7 +224,8 @@ contract Fadra is ERC20 {
         // check if we are getting values for all functions
     }
 
-    function alphai(address user) public view returns (uint256) {
+    // and view plssssssssssss (i have remove it for testing purposes)
+    function alphai(address user) public returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 tokenDistributionMultiplier = getTokenDistribution(user);
         uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
@@ -235,7 +237,8 @@ contract Fadra is ERC20 {
         // check if we are getting values for all functions
     }
 
-    function Hholding(address user) public view returns (uint256) {
+    // and view plssssssssssss (i have remove it for testing purposes)
+    function Hholding(address user) public returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 lastTx = userActivities[user].lastTransactionTimestamp;
         uint256 timeDiff = block.timestamp - lastTx;
@@ -245,6 +248,7 @@ contract Fadra is ERC20 {
         // check if activity if greater than scale and not greater then scale
     }
 
+    // and view plssssssssssss (i have remove it for testing purposes)
     function Sactivity(address user) public returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 userTxCount = userActivities[user].transactionCount;
@@ -263,6 +267,74 @@ contract Fadra is ERC20 {
         uint256 result = (userTxCount * SCALE) / averageTx;
         console.log("Sactivity Result:", result);
         return result;
+    }
+
+    function debugBetai(address user) public returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
+
+        uint256 tokenDistributionMultiplier = 1e18 - getTokenDistribution(user);
+        console.log(
+            "Token Distribution Multiplier:",
+            tokenDistributionMultiplier
+        );
+
+        uint256 betaMin = (BASE_BETA_MIN * (totalRewardPool * 1e18)) /
+            TARGET_REWARD_POOL;
+        console.log("Beta Min:", betaMin);
+
+        uint256 betaMax = (BASE_BETA_MAX * (totalRewardPool * 1e18)) /
+            TARGET_REWARD_POOL;
+        console.log("Beta Max:", betaMax);
+
+        uint256 result = betaMin +
+            (betaMax - betaMin) *
+            tokenDistributionMultiplier;
+        console.log("Final Beta Value:", result);
+
+        return result;
+    }
+
+    function debugAlphai(address user) public returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
+
+        uint256 tokenDistributionMultiplier = getTokenDistribution(user);
+        console.log(
+            "Token Distribution Multiplier:",
+            tokenDistributionMultiplier
+        );
+
+        uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
+            (totalTransactions * 1e18);
+        console.log("Alpha Min:", alphaMin);
+
+        uint256 alphaMax = (BASE_ALPHA_MAX * TARGET_ACTIVITY) /
+            (totalTransactions * 1e18);
+        console.log("Alpha Max:", alphaMax);
+
+        uint256 result = alphaMin +
+            (alphaMax - alphaMin) *
+            tokenDistributionMultiplier;
+        console.log("Final Alpha Value:", result);
+
+        return result;
+    }
+
+    function debugHholding(address user) public returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
+
+        uint256 lastTx = userActivities[user].lastTransactionTimestamp;
+        console.log("Last Transaction Timestamp:", lastTx);
+
+        uint256 timeDiff = block.timestamp - lastTx;
+        console.log("Time Difference:", timeDiff);
+
+        uint256 activity = (timeDiff * SCALE) / SECONDS_PER_YEAR;
+        console.log("Raw Activity:", activity);
+
+        uint256 finalActivity = activity > SCALE ? SCALE : activity;
+        console.log("Final Activity:", finalActivity);
+
+        return finalActivity;
     }
 
     function fallBack() public returns (bool) {

@@ -1,0 +1,45 @@
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  setted maxTokenHolder Value:  1000000000000000000000
+  setted totalRewardPool value:  1200000000000000000000
+  130000000000000000020000000000000000000000000000000000
+  Beta ends----------------------------------
+  Token Distribution Multiplier: 1000000000000000000
+  Beta Min: 20000000000000000000000000000000000
+  Beta Max: 150000000000000000000000000000000000
+  Final Beta Value: 130000000000000000020000000000000000000000000000000000
+
+ Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  setted maxTokenHolder Value:  1000000000000000000000
+  setted totalTransaction value:  600000000000000000000
+  0
+  Alphai ends----------------------------------
+  Token Distribution Multiplier: 0
+  Alpha Min: 0
+  Alpha Max: 0
+  Final Alpha Value: 0
+
+    Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  Hholding returned value  13698630136986301
+  Hholding ends----------------------------------
+  Last Transaction Timestamp: 1736581266
+  Time Difference: 432000
+  Raw Activity: 13698630136986301
+  Final Activity: 13698630136986301
+
+   Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  setted totalTransaction value:  600000000000000000000
+  setted totalUsers value is 50000000000000000000
+  5
+  Sactivity returned value  416666666666666666
+  Sactivity ends----------------------------------
+  User Transaction Count: 5
+  Average Transaction: 12
+  Sactivity Result: 416666666666666666

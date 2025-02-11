@@ -82,6 +82,8 @@ contract FadraTest is Test {
             fadra.getTotalRewardPoolValue()
         );
         console.log(fadra.betai(msg.sender));
+        console.log("Beta ends----------------------------------");
+        fadra.debugBetai(msg.sender);
     }
 
     function testAlphai() public {
@@ -93,6 +95,8 @@ contract FadraTest is Test {
             fadra.getTotalTransaction()
         );
         console.log(fadra.alphai(msg.sender));
+        console.log("Alphai ends----------------------------------");
+        fadra.debugAlphai(msg.sender);
     }
 
     function testHholding() public {
@@ -101,6 +105,8 @@ contract FadraTest is Test {
         // console.log("timestamp", block.timestamp);
         fadra.setUserActivity(msg.sender, 1000, 5, 1736581266, 92);
         console.log("Hholding returned value ", fadra.Hholding(msg.sender));
+        console.log("Hholding ends----------------------------------");
+        fadra.debugHholding(msg.sender);
     }
 
     function testSactivity() public {
