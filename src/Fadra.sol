@@ -8,6 +8,7 @@ import "forge-std/console.sol";
 contract Fadra is ERC20 {
     // I had to make everything public because of the test.
     uint256 public immutable maxSupply = 6_942_000_000 * 1e18; // no need to hard code, we will get this value upon deployment
+    // we haven't scaled timestamp throughout the code
     uint256 public constant SECONDS_PER_YEAR = 31536000;
     uint256 public constant SECONDS_IN_THREE_MONTHS = 7776000;
     uint256 public constant SCALE = 1e18; // Minimum value with added precision
@@ -215,57 +216,20 @@ contract Fadra is ERC20 {
     // and view plssssssssssss (i have remove it for testing purposes)
     function betai(address user) public returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
+
         uint256 tokenDistributionMultiplier = 1e18 - getTokenDistribution(user);
-        uint256 betaMin = (BASE_BETA_MIN * (totalRewardPool * 1e18)) /
-            TARGET_REWARD_POOL;
-        uint256 betaMax = (BASE_BETA_MAX * (totalRewardPool * 1e18)) /
-            TARGET_REWARD_POOL;
-        return betaMin + (betaMax - betaMin) * tokenDistributionMultiplier;
-        // check if we are getting values for all functions
-    }
 
-    // and view plssssssssssss (i have remove it for testing purposes)
-    function alphai(address user) public returns (uint256) {
-        require(user != address(0), "Sender address cannot be zero");
-        uint256 tokenDistributionMultiplier = getTokenDistribution(user);
-        uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
-            (totalTransactions * 1e18);
-        uint256 alphaMax = (BASE_ALPHA_MAX * TARGET_ACTIVITY) /
-            (totalTransactions * 1e18);
+        // Fix scaling issues by adjusting calculations
+        uint256 betaMin = (BASE_BETA_MIN * totalRewardPool) /
+            TARGET_REWARD_POOL; // Keep 1e18 scaling
+        uint256 betaMax = (BASE_BETA_MAX * totalRewardPool) /
+            TARGET_REWARD_POOL; // Keep 1e18 scaling
 
-        return alphaMin + (alphaMax - alphaMin) * tokenDistributionMultiplier;
-        // check if we are getting values for all functions
-    }
+        // Ensure the final computation maintains correct scale
+        uint256 result = betaMin +
+            ((betaMax - betaMin) * tokenDistributionMultiplier) /
+            1e18;
 
-    // and view plssssssssssss (i have remove it for testing purposes)
-    function Hholding(address user) public returns (uint256) {
-        require(user != address(0), "Sender address cannot be zero");
-        uint256 lastTx = userActivities[user].lastTransactionTimestamp;
-        uint256 timeDiff = block.timestamp - lastTx;
-        uint256 activity = (timeDiff * SCALE) / SECONDS_PER_YEAR;
-        return activity > SCALE ? SCALE : activity;
-        // check if all values are fetching from struct or not
-        // check if activity if greater than scale and not greater then scale
-    }
-
-    // and view plssssssssssss (i have remove it for testing purposes)
-    function Sactivity(address user) public returns (uint256) {
-        require(user != address(0), "Sender address cannot be zero");
-        uint256 userTxCount = userActivities[user].transactionCount;
-        console.log(userTxCount);
-        uint256 averageTx = totalTransactions / totalUsers;
-        return (userTxCount * SCALE) / averageTx;
-        // check if all values are fetching from struct or not
-    }
-    // delete this later
-    function debugSactivity(address user) public returns (uint256) {
-        require(user != address(0), "Sender address cannot be zero");
-        uint256 userTxCount = userActivities[user].transactionCount;
-        console.log("User Transaction Count:", userTxCount);
-        uint256 averageTx = totalTransactions / totalUsers;
-        console.log("Average Transaction:", averageTx);
-        uint256 result = (userTxCount * SCALE) / averageTx;
-        console.log("Sactivity Result:", result);
         return result;
     }
 
@@ -278,18 +242,51 @@ contract Fadra is ERC20 {
             tokenDistributionMultiplier
         );
 
-        uint256 betaMin = (BASE_BETA_MIN * (totalRewardPool * 1e18)) /
+        // Fix scaling: Don't multiply totalRewardPool by 1e18 again
+        uint256 betaMin = (BASE_BETA_MIN * totalRewardPool) /
             TARGET_REWARD_POOL;
         console.log("Beta Min:", betaMin);
 
-        uint256 betaMax = (BASE_BETA_MAX * (totalRewardPool * 1e18)) /
+        uint256 betaMax = (BASE_BETA_MAX * totalRewardPool) /
             TARGET_REWARD_POOL;
         console.log("Beta Max:", betaMax);
 
-        uint256 result = betaMin +
-            (betaMax - betaMin) *
-            tokenDistributionMultiplier;
+        uint256 betaDiff = betaMax - betaMin;
+        console.log("Beta Difference (betaMax - betaMin):", betaDiff);
+
+        uint256 scaledBetaDiff = (betaDiff * tokenDistributionMultiplier) /
+            1e18;
+        console.log("Scaled Beta Difference:", scaledBetaDiff);
+
+        uint256 result = betaMin + scaledBetaDiff;
         console.log("Final Beta Value:", result);
+
+        return result;
+    }
+
+    // and view plssssssssssss (i have remove it for testing purposes)
+    function alphai(address user) public returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
+
+        uint256 tokenDistributionMultiplier = getTokenDistribution(user);
+
+        // Ensure totalTransactions is not zero to prevent division by zero
+        require(
+            totalTransactions > 0,
+            "Total transactions must be greater than zero"
+        );
+
+        // Properly scaled calculations
+        uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
+            totalTransactions; // No extra 1e18
+        uint256 alphaMax = (BASE_ALPHA_MAX * TARGET_ACTIVITY) /
+            totalTransactions; // No extra 1e18
+
+        // Ensure correct scaling in the final calculation
+        uint256 alphaDiff = alphaMax - alphaMin;
+        uint256 scaledAlphaDiff = (alphaDiff * tokenDistributionMultiplier) /
+            1e18;
+        uint256 result = alphaMin + scaledAlphaDiff;
 
         return result;
     }
@@ -303,20 +300,44 @@ contract Fadra is ERC20 {
             tokenDistributionMultiplier
         );
 
+        require(
+            totalTransactions > 0,
+            "Total transactions must be greater than zero"
+        );
+
         uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
-            (totalTransactions * 1e18);
+            totalTransactions;
         console.log("Alpha Min:", alphaMin);
 
         uint256 alphaMax = (BASE_ALPHA_MAX * TARGET_ACTIVITY) /
-            (totalTransactions * 1e18);
+            totalTransactions;
         console.log("Alpha Max:", alphaMax);
 
-        uint256 result = alphaMin +
-            (alphaMax - alphaMin) *
-            tokenDistributionMultiplier;
+        uint256 alphaDiff = alphaMax - alphaMin;
+        console.log("Alpha Difference (alphaMax - alphaMin):", alphaDiff);
+
+        uint256 scaledAlphaDiff = (alphaDiff * tokenDistributionMultiplier) /
+            1e18;
+        console.log("Scaled Alpha Difference:", scaledAlphaDiff);
+
+        uint256 result = alphaMin + scaledAlphaDiff;
         console.log("Final Alpha Value:", result);
 
         return result;
+    }
+
+    // and view plssssssssssss (i have remove it for testing purposes)
+    function Hholding(address user) public returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
+
+        uint256 lastTx = userActivities[user].lastTransactionTimestamp;
+        uint256 timeDiff = block.timestamp - lastTx;
+
+        // Ensure scaling is maintained properly
+        uint256 activity = (timeDiff * SCALE) / SECONDS_PER_YEAR;
+
+        // Remove unnecessary division by 1e18 if SCALE is already in 1e18 format
+        return activity > SCALE ? SCALE : activity;
     }
 
     function debugHholding(address user) public returns (uint256) {
@@ -335,6 +356,41 @@ contract Fadra is ERC20 {
         console.log("Final Activity:", finalActivity);
 
         return finalActivity;
+    }
+
+    // and view plssssssssssss (i have remove it for testing purposes)
+    function Sactivity(address user) public returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
+
+        uint256 userTxCount = userActivities[user].transactionCount;
+
+        // Prevent division by zero
+        if (totalUsers == 0) return 0;
+
+        uint256 averageTx = totalTransactions / totalUsers;
+
+        return averageTx > 0 ? (userTxCount * SCALE) / averageTx : 0;
+    }
+
+    // delete this later
+    function debugSactivity(address user) public returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
+
+        uint256 userTxCount = userActivities[user].transactionCount;
+        console.log("User Transaction Count:", userTxCount);
+
+        if (totalUsers == 0) {
+            console.log("Total Users is 0, returning 0");
+            return 0;
+        }
+
+        uint256 averageTx = totalTransactions / totalUsers;
+        console.log("Average Transaction:", averageTx);
+
+        uint256 result = averageTx > 0 ? (userTxCount * SCALE) / averageTx : 0;
+        console.log("Sactivity Result:", result);
+
+        return result;
     }
 
     function fallBack() public returns (bool) {
@@ -358,13 +414,40 @@ contract Fadra is ERC20 {
         }
     }
 
-    function getTokenDistribution(address user) public view returns (uint256) {
+    // check alphai once this function is tested
+    function getTokenDistribution(address user) public returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
-        // uint256 userTokens = balanceOf(user);
-        uint256 userTokens = 500;
-        return (userTokens * SCALE) / maxTokenHolder;
+        // uint256 userTokens = balanceOf(user); // ye 1e18 deta hai
+        uint256 userTokens = 500 * SCALE;
+        if (maxTokenHolder == 0) return 0;
+        return (userTokens * SCALE) / (maxTokenHolder);
         // check if it is returing correct Di/Dmax
         // also write gas this function used
+    }
+
+    function debugGetTokenDistribution(address user) public returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
+
+        console.log(
+            "msg sender in getTokenDistribution:",
+            balanceOf(msg.sender)
+        );
+
+        uint256 userTokens = 500 * SCALE; // Scale only once
+        console.log("User Tokens:", userTokens);
+
+        if (maxTokenHolder == 0) {
+            console.log("Max Token Holder is 0, returning 0");
+            return 0;
+        }
+
+        console.log("Max Token Holder:", maxTokenHolder);
+
+        // Fix scaling issue
+        uint256 result = (userTokens * SCALE) / (maxTokenHolder);
+        console.log("Token Distribution Result (Di/Dmax):", result);
+
+        return result;
     }
 
     function _updateUserActivity(address user) public {

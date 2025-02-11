@@ -1,0 +1,3 @@
+- timestamps are not scaled throughout the code
+- transaction count is not scaled (transaction)
+- add view in Hholding, Sactivity, betai and alphai, getTokenDistribution

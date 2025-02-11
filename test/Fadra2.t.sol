@@ -71,6 +71,8 @@ contract FadraTest is Test {
         console.log("setted maxTokenHolder Value: ", fadra.getMaxTokenHolder());
         uint256 tokenDistribution = fadra.getTokenDistribution(msg.sender);
         console.log("Di/Dmax is: ", tokenDistribution);
+        console.log("Beta ends----------------------------------");
+        fadra.debugGetTokenDistribution(msg.sender);
     }
 
     function testBetai() public {
