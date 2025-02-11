@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "forge-std/console.sol";
 
 contract Fadra is ERC20 {
     // I had to make everything public because of the test.
@@ -244,12 +245,24 @@ contract Fadra is ERC20 {
         // check if activity if greater than scale and not greater then scale
     }
 
-    function Sactivity(address user) public view returns (uint256) {
+    function Sactivity(address user) public returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         uint256 userTxCount = userActivities[user].transactionCount;
+        console.log(userTxCount);
         uint256 averageTx = totalTransactions / totalUsers;
         return (userTxCount * SCALE) / averageTx;
         // check if all values are fetching from struct or not
+    }
+    // delete this later
+    function debugSactivity(address user) public returns (uint256) {
+        require(user != address(0), "Sender address cannot be zero");
+        uint256 userTxCount = userActivities[user].transactionCount;
+        console.log("User Transaction Count:", userTxCount);
+        uint256 averageTx = totalTransactions / totalUsers;
+        console.log("Average Transaction:", averageTx);
+        uint256 result = (userTxCount * SCALE) / averageTx;
+        console.log("Sactivity Result:", result);
+        return result;
     }
 
     function fallBack() public returns (bool) {

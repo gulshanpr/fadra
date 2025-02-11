@@ -32,7 +32,3 @@ Paid: 0.00032344945 ETH (1495720 gas * 0.21625 gwei)
 ==========================
 
 ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
-
-Transactions saved to: /home/gulshan/All-Codes/open-source/fadra/broadcast/Fadra.s.sol/421614/run-latest.json
-
-Sensitive values saved to: /home/gulshan/All-Codes/open-source/fadra/cache/Fadra.s.sol/421614/run-latest.json
