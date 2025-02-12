@@ -119,9 +119,10 @@ contract Fadra is ERC20 {
             "Transfer to Marketing wallet failed"
         );
 
-        _updateUserActivity(from);
+        
         _updateMaxTokenHolder(from);
         _updateMaxTokenHolder(to);
+        _updateUserActivity(from);
         updateUserContribution(from);
 
         // after transaction calculate reward for that transaction
@@ -414,13 +415,14 @@ contract Fadra is ERC20 {
         }
     }
 
-    // check alphai once this function is tested
+    // check alphai once this function is tested , checked this
     function getTokenDistribution(address user) public returns (uint256) {
         require(user != address(0), "Sender address cannot be zero");
         // uint256 userTokens = balanceOf(user); // ye 1e18 deta hai
         uint256 userTokens = 500 * SCALE;
         if (maxTokenHolder == 0) return 0;
-        return (userTokens * SCALE) / (maxTokenHolder);
+        uint256 resultToken = (userTokens) / (maxTokenHolder);
+        return resultToken * 1e18;
         // check if it is returing correct Di/Dmax
         // also write gas this function used
     }
@@ -457,6 +459,23 @@ contract Fadra is ERC20 {
         }
         userActivities[user].transactionCount++;
         totalTransactions++;
+        userActivities[user].lastTransactionTimestamp = block.timestamp;
+        // for the first transaction if unique user is increasing or not,
+        // then check if it is properly increasing transactionCount and lastTransactionTimestamp
+        // also write gas this function used
+    }
+
+      function _DebugupdateUserActivity(address user) public {
+        require(user != address(0), "Sender address cannot be zero");
+        if (userActivities[user].transactionCount == 0) {
+            totalUsers++;
+            console.log(totalUsers);
+        }
+        uint256 usertrans = userActivities[user].transactionCount++;
+        console.log("the user transaction count is: ", usertrans);
+        uint256 ttl = totalTransactions++;
+        console.log("ttl is: ", ttl);
+        console.log("total transaction: ", totalTransactions);
         userActivities[user].lastTransactionTimestamp = block.timestamp;
         // for the first transaction if unique user is increasing or not,
         // then check if it is properly increasing transactionCount and lastTransactionTimestamp
@@ -513,7 +532,7 @@ contract Fadra is ERC20 {
     }
 
     function setTotalRewardPoolValue(uint256 _value) external {
-        totalRewardPool = _value * 1e18;
+        totalRewardPool = _value;
     }
 
     function getTotalRewardPoolValue() public view returns (uint256) {
@@ -521,7 +540,7 @@ contract Fadra is ERC20 {
     }
 
     function setTotalTransaction(uint256 _value) external {
-        totalTransactions = _value * 1e18;
+        totalTransactions = _value;
     }
 
     function getTotalTransaction() public view returns (uint256) {
@@ -565,7 +584,7 @@ contract Fadra is ERC20 {
     }
 
     function setTotalUser(uint256 _users) external {
-        totalUsers = _users * 1e18;
+        totalUsers = _users;
     }
 
     function getTotalUser() public view returns (uint256) {

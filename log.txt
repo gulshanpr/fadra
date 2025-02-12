@@ -49,13 +49,28 @@ Logs:
   Average Transaction: 12
   Sactivity Result: 416666666666666666
 
-Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+ Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
   Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
   Balance of deployer after deploying Fadra: 6942000000000000000000000000
   setted maxTokenHolder Value:  1000000000000000000000
-  Di/Dmax is:  500000000000000000
+  Di/Dmax is:  0
   Beta ends----------------------------------
   msg sender in getTokenDistribution: 6942000000000000000000000000
   User Tokens: 500000000000000000000
   Max Token Holder: 1000000000000000000000
   Token Distribution Result (Di/Dmax): 500000000000000000
+
+   Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  1737013266
+  1737013269
+  balance 23443000000000000000000
+  transactionCount 36
+  lastTransactionTimestamp 1737013269
+  reward 1000000000000000000000
+  total transaction count 12347
+  --------------------end
+  the user transaction count is:  36
+  ttl is:  12347
+  total transaction:  12348

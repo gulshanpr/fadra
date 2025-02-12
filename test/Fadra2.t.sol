@@ -127,7 +127,7 @@ contract FadraTest is Test {
     }
 
     function testUpdateUserActivity() public {
-        fadra.setUserActivity(msg.sender, 23443, 34, 1737013245, 1000);
+        fadra.setUserActivity(msg.sender, 23443e18, 34, 1737013245, 1000e18);
         fadra.setTotalTransaction(12345);
         vm.warp(1737013266);
         console.log(block.timestamp);
@@ -147,6 +147,8 @@ contract FadraTest is Test {
         console.log("lastTransactionTimestamp", lastTransactionTimestamp);
         console.log("reward", reward);
         console.log("total transaction count", fadra.getTotalTransaction());
+        console.log("--------------------end");
+        fadra._DebugupdateUserActivity(msg.sender);
     }
 
     function testUpdateMaxTokenHolder() public {
