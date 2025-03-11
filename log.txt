@@ -74,3 +74,129 @@ Logs:
   the user transaction count is:  36
   ttl is:  12347
   total transaction:  12348
+
+
+---new
+---testCalculateFees
+testCalculateFees logs:
+Logs:
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  Input Amount:  1000
+  LP Fee (2%):  20
+  RP Fee (2%):  20
+  Marketing Fee (0.85%):  8
+  Amount After Fees:  952
+
+---testMin
+Logs:
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  min value is 200000
+
+--testMax
+Logs:
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  max value is 10000000
+
+---testGetTokenDistribution
+Logs:
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  setted maxTokenHolder Value:  1000000000000000000000
+  Di/Dmax is:  500000000000000000
+  Beta ends----------------------------------
+  msg sender in getTokenDistribution: 6942000000000000000000000000
+  User Tokens: 500000000000000000000
+  Max Token Holder: 1000000000000000000000
+  Token Distribution Result (Di/Dmax): 500000000000000000
+
+--testBetai
+Logs:
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  setted maxTokenHolder Value:  1000000000000000000000
+  setted totalRewardPool value:  1200000000000000000000
+  85000000000000000
+  Beta ends----------------------------------
+  Token Distribution Multiplier: 500000000000000000
+  Beta Min: 20000000000000000 0.02
+  Beta Max: 150000000000000000 0.15
+  Beta Difference (betaMax - betaMin): 130000000000000000
+  Scaled Beta Difference: 65000000000000000 // 0.065
+  Final Beta Value: 85000000000000000 //0.085
+
+---testAlphai
+Logs:
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  setted maxTokenHolder Value:  1000000000000000000000
+  setted totalTransaction value:  600
+  55000000000000000000000000000000000
+  Alphai ends----------------------------------
+  Token Distribution Multiplier: 500000000000000000 0.5
+  Alpha Min: 10000000000000000 0.01
+  Alpha Max: 100000000000000000 0.1
+  Alpha Difference (alphaMax - alphaMin): 90000000000000000 0.09
+  Scaled Alpha Difference: 45000000000000000 0.045
+  Final Alpha Value: 55000000000000000 0.055
+
+---testHholding
+Logs:
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  Hholding returned value  13698630136986301
+  Hholding ends----------------------------------
+  Last Transaction Timestamp: 1736581266
+  Time Difference: 432000
+  Raw Activity: 13698630136986301
+  Final Activity: 13698630136986301
+
+---testSactivity
+Logs:
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  setted totalTransaction value:  600
+  setted totalUsers value is 50
+  Sactivity returned value  416666666666666666
+  Sactivity ends----------------------------------
+  User Transaction Count: 5
+  Average Transaction: 12
+  Sactivity Result: 416666666666666666 0.4
+
+---testUpdateUserActivity
+Logs:
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  1737013266
+  1737013269
+  balance 23443000000000000000000
+  transactionCount 36
+  lastTransactionTimestamp 1737013269
+  reward 1000000000000000000000
+  total transaction count 12347
+  --------------------end
+  the user transaction count is:  36
+  ttl is:  12347
+  total transaction:  12348
+
+---testUpdateMaxTokenHolder
+Logs:
+  Deployer address (msg.sender) is: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Owner address set in Fadra contract: 0xaE0bDc4eEAC5E950B67C6819B118761CaAF61946
+  Balance of deployer after deploying Fadra: 6942000000000000000000000000
+  Max token holder after setting baseline: 0
+  Max token holder after setting baseline: 99999999000000000000000000
+  Max token holder after setting baseline: after updating 6942000000000000000000000000
+
+---testDebugSactivity

@@ -279,9 +279,9 @@ contract Fadra is ERC20 {
 
         // Properly scaled calculations
         uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
-            totalTransactions; // No extra 1e18
+             (totalTransactions * 1e18); // No extra 1e18
         uint256 alphaMax = (BASE_ALPHA_MAX * TARGET_ACTIVITY) /
-            totalTransactions; // No extra 1e18
+             (totalTransactions * 1e18);// No extra 1e18
 
         // Ensure correct scaling in the final calculation
         uint256 alphaDiff = alphaMax - alphaMin;
@@ -307,11 +307,11 @@ contract Fadra is ERC20 {
         );
 
         uint256 alphaMin = (BASE_ALPHA_MIN * TARGET_ACTIVITY) /
-            totalTransactions;
+            (totalTransactions * 1e18);
         console.log("Alpha Min:", alphaMin);
 
         uint256 alphaMax = (BASE_ALPHA_MAX * TARGET_ACTIVITY) /
-            totalTransactions;
+           (totalTransactions * 1e18);
         console.log("Alpha Max:", alphaMax);
 
         uint256 alphaDiff = alphaMax - alphaMin;
@@ -421,8 +421,8 @@ contract Fadra is ERC20 {
         // uint256 userTokens = balanceOf(user); // ye 1e18 deta hai
         uint256 userTokens = 500 * SCALE;
         if (maxTokenHolder == 0) return 0;
-        uint256 resultToken = (userTokens) / (maxTokenHolder);
-        return resultToken * 1e18;
+        uint256 resultToken = (userTokens * SCALE) / (maxTokenHolder);
+        return resultToken;
         // check if it is returing correct Di/Dmax
         // also write gas this function used
     }
@@ -532,7 +532,7 @@ contract Fadra is ERC20 {
     }
 
     function setTotalRewardPoolValue(uint256 _value) external {
-        totalRewardPool = _value;
+        totalRewardPool = _value * 1e18;
     }
 
     function getTotalRewardPoolValue() public view returns (uint256) {
@@ -540,7 +540,7 @@ contract Fadra is ERC20 {
     }
 
     function setTotalTransaction(uint256 _value) external {
-        totalTransactions = _value;
+        totalTransactions = _value ;
     }
 
     function getTotalTransaction() public view returns (uint256) {
